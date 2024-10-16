@@ -4,7 +4,11 @@
 [Deep Learning Model Uncertainty in Medical Image Analysis](https://github.com/ddrevicky/deep-learning-uncertainty)
 
 [龙石数据](https://www.longshidata.com/pages/quality.html)
-
+## 要求
+训练数据审查
+1. 支持数据集准确性审查，提供数据集标签检查、异常数据检查、缺失值检查等功能;
+2. 支持数据集完整性审查，提供内容完整性检查、重复数据检查等功能;
+3. 支持数据集量级、类别分布均衡性审查。
 ## 图像分类（训练集、验证集、测试集）
 ### 类别多样性
 1. 图像类别数量分布，即标签丰富性
