@@ -86,6 +86,18 @@ def convert_coco_to_png(base_dir, src_split='val2017', split='val'):
                 mask[rle_msk!=0] = rle_msk[rle_msk!=0]
             cv2.imwrite(os.path.join(mask_dir, img_name), mask)
 
+
+def move_imgs_to_specified_folder(base_dir, src_split='val2017', split='val'):    
+    '''
+        adjust the organization of original data to specified folder
+    '''
+    dst_img_dir = os.path.join(base_dir, split, 'images')
+    make_folder_if_not(dst_img_dir)
+    src_img_dir = os.path.join(base_dir, 'images', src_split)
+    src_ime_names = os.listdir(src_img_dir)
+    for f_name in src_ime_names:
+        shutil.copy(os.path.join(src_img_dir, f_name), os.path.join(dst_img_dir, f_name))
+
 if __name__ == '__main__':
     base_dir = 'F:/Public_Dataset/COCO'
     convert_coco_to_png(base_dir, src_split='val2017', split='val') 
