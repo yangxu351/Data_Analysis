@@ -2,6 +2,7 @@ import os
 import shutil 
 import glob 
 import pandas as pd
+import json 
 import xml.etree.ElementTree as ET
 
 def make_folder_if_not(dst_dir, rm_exist=True):
@@ -14,15 +15,22 @@ def make_folder_if_not(dst_dir, rm_exist=True):
 
 
 def covert_voc_to_yolo(base_dir):
-    ''' convert VOC to YOLO '''
+    ''' 
+        convert VOC to YOLO 
+        empty labels
+        duplicate annotations
+    '''
     xml_dir = os.path.join(base_dir, 'Annotations')
     txt_dir = os.path.join(base_dir, 'labelsAll') 
 
     xml_files = glob.glob(os.path.join(xml_dir, '*.xml'))
     dict_cats = {}
     index = 0
+    dict_duplicate_file_box = {}
+    empty_lbls = []
     make_folder_if_not(txt_dir)
     for xf in xml_files:
+        file_name = os.path.basename(xf)
         ann_tree = ET.parse(xf)
         ann_root = ann_tree.getroot()
         size = ann_root.find('size')
@@ -30,6 +38,9 @@ def covert_voc_to_yolo(base_dir):
         img_height = int(size.findtext('height'))
         objects = ann_root.findall('object')
         lbl_list = []
+        oribox_list = []
+        if not len(objects):
+            empty_lbls.append(file_name)
         for obj in objects:
             cat = obj.find('name')
             if cat not in dict_cats.keys():
@@ -40,6 +51,16 @@ def covert_voc_to_yolo(base_dir):
             ymin = max(float(bndbox.findtext('ymin')) - 1, 0.)
             xmax = float(bndbox.findtext('xmax'))
             ymax = float(bndbox.findtext('ymax'))
+            box = [xmin, ymin, xmax, ymax]
+            # check duplicate
+            if box not in oribox_list:
+                oribox_list.append(box)
+            else:
+                if file_name not in dict_duplicate_file_box.keys():
+                    dict_duplicate_file_box[file_name] = [box]
+                else:
+                    dict_duplicate_file_box[file_name].append(box)
+            
             width = xmax - xmin 
             height = ymax - ymin 
             center_wid = xmin+width/2.
@@ -50,8 +71,17 @@ def covert_voc_to_yolo(base_dir):
         with open(lbl_file, 'w') as f:
             for id, cx,cy,w,h in lbl_list:
                 f.write("%d\t%.4f\t%.4f\t%.4f\t%.4f\n" % (id, cx, cy, w, h))
+        f.close() 
+
+        file_empty = os.path.join(base_dir,'files_without_lbls.txt')
+        with open(file_empty, 'w') as f:
+            for name in empty_lbls:
+                f.write("%s\n" % name)
         f.close()    
 
+        with open(os.path.join(base_dir, f'duplicate_file_bbox.json'), 'w') as f: # dict of file_name:[bbox]
+            json.dump(dict_duplicate_file_box, f, ensure_ascii=False, indent=3)
+        f.close() 
 
 def movefiles_by_setfile(base_dir, split='train'):
     '''
