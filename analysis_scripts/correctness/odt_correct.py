@@ -2,10 +2,13 @@ import os
 from PIL import Image
 import numpy as np
 
-def outlier_img_detection(img_list, outlier_thresh=0.5):
+def outlier_img_detection(base_dir, split, outlier_thresh=0.5):
     '''
         outlier detection
     '''
+    img_dir = os.path.join(base_dir, split, 'images')
+    img_list = os.listdir(img_dir)
+
     outlier_list = []
     not_img_list = []
     for i_name in img_list:
@@ -31,10 +34,13 @@ def outlier_img_detection(img_list, outlier_thresh=0.5):
 
 
     
-def empty_check_lbl(lbl_list, lbl_dir, base_dir, split):
+def empty_check_lbl(base_dir, split):
     '''
         empty label check
     '''
+    lbl_dir = os.path.join(base_dir, split, 'labels')
+    lbl_list = os.listdir(lbl_dir)
+
     empty_files = []
     for lbl_name in lbl_list:
         lbl_file = os.path.join(lbl_dir, lbl_name)
@@ -50,13 +56,8 @@ def empty_check_lbl(lbl_list, lbl_dir, base_dir, split):
 if __name__ == "__main__":
     base_dir = 'F:/Public_Dataset/COCO'
     split = 'val'
-    img_dir = os.path.join(base_dir, split, 'images')
-    img_list = os.listdir(img_dir)
     
-    lbl_dir = os.path.join(base_dir, split, 'labels')
-    lbl_list = os.listdir(lbl_dir)
-    
-    outlier_img_detection(img_list, outlier_thresh=0.5)
+    outlier_img_detection(base_dir, split, outlier_thresh=0.5)
 
-    empty_check_lbl(lbl_list, lbl_dir, base_dir)
+    empty_check_lbl(base_dir, split)
         
