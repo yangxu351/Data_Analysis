@@ -1,7 +1,7 @@
 import argparse
-from analysis_scripts.analysis_cls import ana_cls, stat_cls
-from analysis_scripts.analysis_odt import ana_odt, stat_odt
-from analysis_scripts.analysis_seg import ana_msk, stat_msk
+from analysis_scripts.diversity.analysis_cls import ana_cls, stat_cls
+from analysis_scripts.diversity.analysis_odt import ana_odt, stat_odt
+from analysis_scripts.diversity.analysis_seg import ana_msk, stat_msk
 
 
 
