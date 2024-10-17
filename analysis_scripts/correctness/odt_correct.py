@@ -25,13 +25,17 @@ def outlier_img_detection(base_dir, split, outlier_thresh=0.5):
         non_zero_ratio = np.count_nonzero(img)/(total_num*1.)
         if non_zero_ratio >= outlier_thresh:
             outlier_list.append(img_file) 
-    if not_img_list:
-        arr_not_imgs = np.array(not_img_list)
-        np.savetxt(os.path.join(base_dir, split, 'not_readable_imgs.txt'), arr_not_imgs, delimiter='\n')
-    if outlier_list:
-        arr_outlier_imgs = np.array(outlier_list)
-        np.savetxt(os.path.join(base_dir, split, 'outlier_imgs.txt'), arr_outlier_imgs, delimiter='\n')
+            
+    with open(os.path.join(base_dir, split, 'not_readable_imgs.txt'), 'w') as f:
+        for name in not_img_list:
+            f.write("%s\n" % (name))
+    f.close()
 
+    with open(os.path.join(base_dir, split, 'outlier_imgs.txt'), 'w') as f:
+        for name in outlier_list:
+            f.write("%s\n" % (name))
+    f.close()
+    
 
     
 def empty_check_lbl(base_dir, split):
@@ -50,8 +54,10 @@ def empty_check_lbl(base_dir, split):
             print("label file is empty!")
             empty_files.append(f)
 
-    arr_empty_file = np.array(empty_files)
-    np.savetxt(os.path.join(base_dir, split, 'empty_lbls.txt'), arr_empty_file, delimiter='\n')
+    with open(os.path.join(base_dir, split, 'empty_lbls.txt'), 'w') as f:
+        for name in empty_files:
+            f.write("%s\n" % (name))
+    f.close()
 
 if __name__ == "__main__":
     base_dir = 'F:/Public_Dataset/COCO'
