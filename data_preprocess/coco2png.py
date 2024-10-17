@@ -93,7 +93,7 @@ def move_imgs_to_specified_folder(base_dir, src_split='val2017', split='val'):
     '''
     dst_img_dir = os.path.join(base_dir, split, 'images')
     make_folder_if_not(dst_img_dir)
-    src_img_dir = os.path.join(base_dir, 'images', src_split)
+    src_img_dir = os.path.join(base_dir, src_split, 'images')
     src_ime_names = os.listdir(src_img_dir)
     for f_name in src_ime_names:
         shutil.copy(os.path.join(src_img_dir, f_name), os.path.join(dst_img_dir, f_name))
@@ -101,3 +101,4 @@ def move_imgs_to_specified_folder(base_dir, src_split='val2017', split='val'):
 if __name__ == '__main__':
     base_dir = 'F:/Public_Dataset/COCO'
     convert_coco_to_png(base_dir, src_split='val2017', split='val') 
+    move_imgs_to_specified_folder(base_dir, src_split='val2017', split='val')
