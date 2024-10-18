@@ -73,13 +73,13 @@ def covert_voc_to_yolo(base_dir):
                 f.write("%d\t%.4f\t%.4f\t%.4f\t%.4f\n" % (id, cx, cy, w, h))
         f.close() 
 
-        file_empty = os.path.join(base_dir,'files_without_lbls.txt')
+        file_empty = os.path.join(base_dir, 'all_files_without_lbls.txt')
         with open(file_empty, 'w') as f:
             for name in empty_lbls:
                 f.write("%s\n" % name)
         f.close()    
 
-        with open(os.path.join(base_dir, f'duplicate_file_bbox.json'), 'w') as f: # dict of file_name:[bbox]
+        with open(os.path.join(base_dir, 'all_duplicate_file_bbox.json'), 'w') as f: # dict of file_name:[bbox]
             json.dump(dict_duplicate_file_box, f, ensure_ascii=False, indent=3)
         f.close() 
 
