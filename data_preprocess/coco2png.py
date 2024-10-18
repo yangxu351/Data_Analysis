@@ -129,7 +129,7 @@ def convert_coco_to_png(base_dir, src_split='val2017', split='val'):
                     # getting the points
                     xs = seg[0::2]
                     ys = seg[1::2]
-                    pts = np.array([[x, y] for x, y in zip(xs, ys)], dtype=np.int8)
+                    pts = np.array([[x, y] for x, y in zip(xs, ys)], dtype=np.int32)
                     pts = pts.reshape((-1, 1, 2))
                     # draw the points on the mask image.
                     try:
