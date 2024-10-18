@@ -50,7 +50,7 @@ def empty_check_lbl(base_dir, split):
         with open(lbl_file, 'r') as f:
             lines = f.readlines()
         if not lines:
-            print("文件为空。")
+            print("empty label file!")
             empty_files.append(lbl_file)
 
     with open(os.path.join(base_dir, f'{split}_empty_files.txt'), 'w') as f:
