@@ -67,7 +67,7 @@ def convert_coco_to_yolo(base_dir, src_split='val2017', split='val'):
         else:
             dict_cats_super_children[super_cat].append(cat_name)
 
-    dumplicat_catinfo_file = os.path.join(base_dir, split, 'duplicate_catinfo.txt')
+    dumplicat_catinfo_file = os.path.join(base_dir, f'{split}_duplicate_catinfo.txt')
     with open(dumplicat_catinfo_file, 'w') as f:
         for catid in duplicate_catinfo_list:
             f.write("%d\n" % (catid))
@@ -111,7 +111,7 @@ def convert_coco_to_yolo(base_dir, src_split='val2017', split='val'):
             dict_imgname_anns[img_name].append(cid_cxy_wh)
 
     
-    dumplicat_anno_file = os.path.join(base_dir, split, 'duplicate_imgid_annid_bbox.txt')
+    dumplicat_anno_file = os.path.join(base_dir, f'{split}_duplicate_imgid_annid_bbox.txt')
     with open(dumplicat_anno_file, 'w') as f:
         for imgid, annid, box in duplicate_imgid_annid_bbox:
             f.write("%d\t%d\t%.2f\t%.2f\t%.2f\t%.2f\n" % (imgid, annid, box[0], box[1], box[2], box[3]))
