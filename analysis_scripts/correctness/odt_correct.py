@@ -2,7 +2,7 @@ import os
 from PIL import Image
 import numpy as np
 
-def outlier_img_detection(base_dir, split, outlier_thresh=0.5):
+def outlier_unreadable_img_detection(base_dir, split, outlier_thresh=0.5):
     '''
         outlier detection
     '''
@@ -26,12 +26,12 @@ def outlier_img_detection(base_dir, split, outlier_thresh=0.5):
         if non_zero_ratio >= outlier_thresh:
             outlier_list.append(img_file) 
             
-    with open(os.path.join(base_dir, split, 'not_readable_imgs.txt'), 'w') as f:
+    with open(os.path.join(base_dir, f'{split}_not_readable_imgs.txt'), 'w') as f:
         for name in not_img_list:
             f.write("%s\n" % (name))
     f.close()
 
-    with open(os.path.join(base_dir, split, 'outlier_imgs.txt'), 'w') as f:
+    with open(os.path.join(base_dir, f'{split}_outlier_imgs.txt'), 'w') as f:
         for name in outlier_list:
             f.write("%s\n" % (name))
     f.close()
@@ -44,17 +44,16 @@ def empty_check_lbl(base_dir, split):
     '''
     lbl_dir = os.path.join(base_dir, split, 'labels')
     lbl_list = os.listdir(lbl_dir)
-
     empty_files = []
-    for lbl_name in lbl_list:
-        lbl_file = os.path.join(lbl_dir, lbl_name)
+    for i_name in lbl_list:
+        lbl_file = os.path.join(lbl_dir, i_name)
         with open(lbl_file, 'r') as f:
             lines = f.readlines()
         if not lines:
-            print("label file is empty!")
-            empty_files.append(f)
+            print("文件为空。")
+            empty_files.append(lbl_file)
 
-    with open(os.path.join(base_dir, split, 'empty_lbls.txt'), 'w') as f:
+    with open(os.path.join(base_dir, f'{split}_empty_files.txt'), 'w') as f:
         for name in empty_files:
             f.write("%s\n" % (name))
     f.close()
@@ -63,7 +62,7 @@ if __name__ == "__main__":
     base_dir = 'F:/Public_Dataset/COCO'
     split = 'val'
     
-    outlier_img_detection(base_dir, split, outlier_thresh=0.5)
+    outlier_unreadable_img_detection(base_dir, split, outlier_thresh=0.5)
 
     empty_check_lbl(base_dir, split)
         
