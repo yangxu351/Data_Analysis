@@ -22,13 +22,14 @@ def covert_voc_to_yolo(base_dir):
     '''
     xml_dir = os.path.join(base_dir, 'Annotations')
     txt_dir = os.path.join(base_dir, 'labelsAll') 
+    make_folder_if_not(txt_dir)
 
     xml_files = glob.glob(os.path.join(xml_dir, '*.xml'))
     dict_cats = {}
     index = 0
     dict_duplicate_file_box = {}
     empty_lbls = []
-    make_folder_if_not(txt_dir)
+    
     for xf in xml_files:
         file_name = os.path.basename(xf)
         ann_tree = ET.parse(xf)
@@ -42,7 +43,7 @@ def covert_voc_to_yolo(base_dir):
         if not len(objects):
             empty_lbls.append(file_name)
         for obj in objects:
-            cat = obj.find('name')
+            cat = obj.findtext('name')
             if cat not in dict_cats.keys():
                 dict_cats[cat] = index
                 index += 1
@@ -65,12 +66,14 @@ def covert_voc_to_yolo(base_dir):
             height = ymax - ymin 
             center_wid = xmin+width/2.
             center_hei = ymin+height/2.
-            lbl_list.append([dict_cats.get(cat), center_wid/img_width, center_hei/img_height, width/img_width, height/img_height])
+            lbl_list.append([dict_cats[cat], center_wid/img_width, center_hei/img_height, width/img_width, height/img_height])
         
+        print('index', index)
+
         lbl_file = os.path.join(txt_dir, os.path.basename(xf).replace('.xml', '.txt'))
         with open(lbl_file, 'w') as f:
-            for id, cx,cy,w,h in lbl_list:
-                f.write("%d\t%.4f\t%.4f\t%.4f\t%.4f\n" % (id, cx, cy, w, h))
+            for cat_id, cx,cy,w,h in lbl_list:
+                f.write("%d\t%.4f\t%.4f\t%.4f\t%.4f\n" % (cat_id, cx, cy, w, h))
         f.close() 
 
         file_empty = os.path.join(base_dir, 'all_files_without_lbls.txt')
