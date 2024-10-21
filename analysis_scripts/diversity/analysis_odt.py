@@ -18,8 +18,8 @@ def get_bbx_wh(lbl, w, h):
     # return arr_lbl[:,0].astype(np.int16), np.round(arr_lbl[:, 3:5], decimals=2)
     return np.array(list(zip(lbl.iloc[:, 0], np.round(arr_lbl[:, 3], decimals=2), np.round(arr_lbl[:, 4], decimals=2))))
 
-def stat_odt(source_dir, label_imgnum_thresh=20, dst_lbl_suffix='.txt'):
-    split_folders = ['train', 'val', 'test']
+def stat_odt(source_dir, label_imgnum_thresh=20, img_suffix='.jpg', dst_lbl_suffix='.txt'):
+    split_folders = ['train', 'val', 'test'] # 
     for sf in split_folders:
         if not os.path.isdir(os.path.join(source_dir, sf)):
             continue
@@ -28,17 +28,26 @@ def stat_odt(source_dir, label_imgnum_thresh=20, dst_lbl_suffix='.txt'):
         ori_imgs = os.listdir(src_img_dir)
         ori_imgs.sort()
         img_num = len(ori_imgs)
+        ori_lbls = os.listdir(src_lbl_dir)
+        ori_lbls.sort()
+        lbl_num = len(ori_lbls)
+        
+        if img_num>lbl_num: # labels 
+            file_names = [l.split('.')[0] for l in ori_lbls]
+        else: # images 
+            file_names = [m.split('.')[0] for m in ori_imgs]
         im_hw_list = []
         dict_cat_bbxhw = {}
         dict_cat_imgname = {}
-        for ix, im_name in enumerate(ori_imgs):
+        for ix, name in enumerate(file_names):
+            im_name = name + img_suffix
             img = np.array(Image.open(os.path.join(src_img_dir, im_name)))
-            # print(' ori shape',  img.shape) # h,w,c
+            # print('ori shape',  img.shape) # h,w,c
             h, w, _ = img.shape
             im_hw_list.append((h,w))
-
-            lbl_file = os.path.join(src_lbl_dir, f"{im_name.split('.')[0]}{dst_lbl_suffix}")
-            lbl = pd.read_csv(lbl_file, header=None, delimiter=' ')
+            # print('image name', im_name)
+            lbl_file = os.path.join(src_lbl_dir, f"{name}{dst_lbl_suffix}")
+            lbl = pd.read_csv(lbl_file, header=None, delimiter='\t')
             arr_cat_bbxwh = get_bbx_wh(lbl, w, h)
             for cx in range(arr_cat_bbxwh.shape[0]):
                 cat_id = int(arr_cat_bbxwh[cx, 0])
@@ -53,7 +62,7 @@ def stat_odt(source_dir, label_imgnum_thresh=20, dst_lbl_suffix='.txt'):
         for lx, (h, w) in enumerate(im_hw_list):
             arr_img_hw[lx, 0] = h
             arr_img_hw[lx, 1] = w
-        np.savetxt(os.path.join(source_dir, f'{sf}_img_hw.csv'), arr_img_hw) # 图像尺寸多样性
+        np.savetxt(os.path.join(source_dir, f'{sf}_img_hw.csv'), arr_img_hw, delimiter=',', fmt='%.2f') # 图像尺寸多样性
 
         with open(os.path.join(source_dir, f'{sf}_cat_bbxhw.json'), 'w') as f: # 类别尺寸多样性
             json.dump(dict_cat_bbxhw, f, ensure_ascii=False, indent=3)
@@ -81,7 +90,7 @@ def ana_odt(source_dir):
         if not os.path.isdir(os.path.join(source_dir, sf)):
             continue
         if sf in ['train', 'val', 'test']:
-            arr_img_hw = np.loadtxt(os.path.join(source_dir, f'{sf}_img_hw.csv'))
+            arr_img_hw = np.loadtxt(os.path.join(source_dir, f'{sf}_img_hw.csv'), delimiter=',')
             plt.figure()
             for h,w in arr_img_hw:
                 plt.scatter(x=w, y=h,  marker='o')
@@ -104,10 +113,17 @@ def ana_odt(source_dir):
             dict_cat_bbxhw = json.load(open(os.path.join(source_dir, f'{sf}_cat_bbxhw.json')))
             plt.figure(figsize=(20,15))
             # plt.figure()
-            for cat, hw in dict_cat_bbxhw.items():
+            cmap = plt.cm.get_cmap('viridis')
+            np.random.seed(10)
+            color_values = np.random.sample(len(dict_cat_bbxhw.keys()))
+            for ix, (cat, hw) in enumerate(dict_cat_bbxhw.items()):
                 for bh,bw in hw:
-                    plt.scatter(x=bw, y=bh,  marker='o', s=0.7*min(bw,bh))
-            plt.legend(dict_cat_bbxhw.keys(),ncol=11)
+                    plt.scatter(x=bw, y=bh,  marker='o', s=0.7*min(bw,bh), color=cmap(color_values[ix]), label=cat)
+            
+            handles = [plt.scatter([], [], marker='o', color=cmap(color_values[cx]), label=cat) for cx, cat in enumerate(dict_cat_bbxhw.keys())]
+            plt.legend(handles=handles)
+
+            # plt.legend(dict_cat_bbxhw.keys(),ncol=11)
             # plt.legend(dict_cat_bbxhw.keys(),ncol=11, bbox_to_anchor=(-0.03,-0.05), loc='upper left')
             # plt.legend(dict_cat_bbxhw.keys(),ncol=11, loc='lower right', labelspacing=0.2)
             plt.xlabel('边界框宽度', fontdict=fontdict)
