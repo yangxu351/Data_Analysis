@@ -39,11 +39,11 @@ def stat_msk(source_dir, label_imgnum_thresh=20):
                     dict_cat_imgname[cid].append(im_name)
                     dict_cat_area[cid].append(msk_area)
                 
-        arr_img_hw = np.ones((len(im_hw_list), 2))
+        arr_img_hw = np.ones((len(im_hw_list), 2), dtype=np.int32)
         for lx, (h, w) in enumerate(im_hw_list):
             arr_img_hw[lx, 0] = h
             arr_img_hw[lx, 1] = w
-        np.savetxt(os.path.join(source_dir, f'{sf}_img_hw.csv'), arr_img_hw) # 图像尺寸多样性
+        np.savetxt(os.path.join(source_dir, f'{sf}_img_hw.csv'), arr_img_hw, delimiter=',', fmt='%.2f') # 图像尺寸多样性
 
         dict_cat_imgnum = {k:len(v) for k,v in dict_cat_imgname.items()} 
         with open(os.path.join(source_dir, f'{sf}_cat_imgnum.json'), 'w') as f: # 类别多样性
@@ -81,7 +81,7 @@ def ana_msk(source_dir):
             plt.savefig(os.path.join(source_dir, f'{sf}_cat_imgnum.jpg'))
             plt.show()
 
-            arr_imghw = np.loadtxt(os.path.join(source_dir, f'{sf}_img_hw.csv'))
+            arr_imghw = np.loadtxt(os.path.join(source_dir, f'{sf}_img_hw.csv'), delimiter=',', dtype=np.int32)
             plt.figure()
             for h,w in arr_imghw:
                 plt.scatter(x=w, y=h,  marker='o')
@@ -93,12 +93,16 @@ def ana_msk(source_dir):
 
             dict_cat_area = json.load(open(os.path.join(source_dir, f'{sf}_cat_area.json')))
             plt.figure(figsize=(15,10))
-            colors = np.array(plt.cm.Set2.colors)
+            # colors = np.array(plt.cm.Set2.colors)
             for k,area_list in dict_cat_area.items():
-                for area in area_list:
-                    plt.scatter(x=k, y=area, marker='o', c=colors[int(k)].reshape(1,-1))
-            plt.xlabel('类别', fontdict=fontdict)
-            plt.ylabel('类别面积', fontdict=fontdict)
-            plt.title('类别面积多样性', fontdict=title_fontdict)
+                # for area in area_list:
+                #     plt.scatter(x=k, y=area, marker='o')
+
+                ## mean area size
+                plt.scatter(x=k, y=np.mean(area_list), marker='o')
+
+            plt.xlabel('类别', fontdict=fontdict, rotation=90)
+            plt.ylabel('类别平均面积', fontdict=fontdict)
+            plt.title('类别平均面积多样性', fontdict=title_fontdict)
             plt.savefig(os.path.join(source_dir, f'{sf}_cat_area.jpg'))
             plt.show()
