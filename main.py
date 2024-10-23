@@ -22,6 +22,7 @@ if __name__ == '__main__':
     parser.add_argument('--base_dir', type=str, default='F:/Public_Dataset/BCCD_VOC', help='object detection')
     parser.add_argument('--odt_lbl_format', type=str, default='voc', help='[coco, voc, yolo]')
     parser.add_argument('--dst_split', type=str, default='test', help='[val, train, test]')
+    parser.add_argument('--wh_ratio_thres', type=int, default=100, help='w/h threshold')
     
     
     # parser.add_argument('--base_dir', type=str, default='F:/Public_Dataset/Lunar', help='segmentation')
@@ -31,6 +32,8 @@ if __name__ == '__main__':
     parser.add_argument('--task', type=str, default='odt', help='[cls, odt, seg]')
     
     parser.add_argument('--num_thres', type=int, default=20, help='类别样本数目阈值')
+    parser.add_argument('--num_cats', type=int, default=20, help='类别样本总数')
+    
     parser.add_argument('--img_suffix', type=str, default='.jpg', help='.png .jpg')
     parser.add_argument('--lbl_suffix', type=str, default='.txt', help='.txt')
     args = parser.parse_args()
@@ -49,6 +52,8 @@ if __name__ == '__main__':
         odt_correct.outlier_unreadable_img_detection(args.base_dir, outlier_thresh=0.5)
         odt_correct.empty_check_lbl(args.base_dir)
         odt_integrity.does_match_img_lbl(args.base_dir)
+        odt_correct.check_id(args.base_dir, num_cls=args.num_cats)
+        odt_correct.check_coordinates(args.base_dir, wh_ratio_thres=args.wh_ratio_thres)
         stat_odt(args.base_dir, label_imgnum_thresh=args.num_thres, img_suffix=args.img_suffix, dst_lbl_suffix=args.lbl_suffix)
         ana_odt(args.base_dir)
     elif args.task == 'seg':
@@ -58,6 +63,7 @@ if __name__ == '__main__':
         seg_correct.outlier_unreadable_img_detection(args.base_dir, outlier_thresh=0.5)
         seg_correct.empty_unreadable_check_msk_png(args.base_dir)
         seg_integrity.does_match_img_lbl(args.base_dir)
+        seg_correct.check_msk_id(args.base_dir, num_cls=args.num_cats)
         stat_msk(args.base_dir, label_imgnum_thresh=args.num_thres)
         ana_msk(args.base_dir)
     else:
