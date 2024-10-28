@@ -2,6 +2,7 @@ import os
 import shutil 
 import glob 
 import pandas as pd
+import numpy as np
 import json 
 import xml.etree.ElementTree as ET
 
@@ -29,6 +30,7 @@ def covert_voc_to_yolo(base_dir):
     index = 0
     dict_duplicate_file_box = {}
     empty_lbls = []
+    invalid_xmls = []
     
     for xf in xml_files:
         file_name = os.path.basename(xf)
@@ -48,19 +50,24 @@ def covert_voc_to_yolo(base_dir):
                 dict_cats[cat] = index
                 index += 1
             bndbox = obj.find('bndbox')
-            xmin = max(float(bndbox.findtext('xmin')) - 1, 0.)
-            ymin = max(float(bndbox.findtext('ymin')) - 1, 0.)
+            xmin = float(bndbox.findtext('xmin')) - 1
+            ymin = float(bndbox.findtext('ymin')) - 1
             xmax = float(bndbox.findtext('xmax'))
             ymax = float(bndbox.findtext('ymax'))
             box = [xmin, ymin, xmax, ymax]
+            # check invlid coordinates
+            if xmin < -1 or ymin <-1 or xmax >img_width or ymax >img_height:
+                invalid_xmls.append([file_name, cat, xmin, ymin, xmax, ymax])
+                continue
+
             # check duplicate
             if box not in oribox_list:
                 oribox_list.append(box)
             else:
                 if file_name not in dict_duplicate_file_box.keys():
-                    dict_duplicate_file_box[file_name] = [box]
+                    dict_duplicate_file_box[file_name] = np.array(box, dtype=np.int32).tolist()
                 else:
-                    dict_duplicate_file_box[file_name].append(box)
+                    dict_duplicate_file_box[file_name].append(np.array(box, dtype=np.int32).tolist())
             
             width = xmax - xmin 
             height = ymax - ymin 
@@ -68,19 +75,25 @@ def covert_voc_to_yolo(base_dir):
             center_hei = ymin+height/2.
             lbl_list.append([dict_cats[cat], center_wid/img_width, center_hei/img_height, width/img_width, height/img_height])
         
-        print('index', index)
-
+        # print('index', index)
+        
         lbl_file = os.path.join(txt_dir, os.path.basename(xf).replace('.xml', '.txt'))
         with open(lbl_file, 'w') as f:
             for cat_id, cx,cy,w,h in lbl_list:
                 f.write("%d\t%.4f\t%.4f\t%.4f\t%.4f\n" % (cat_id, cx, cy, w, h))
         f.close() 
 
+        file_invalid_xml = os.path.join(base_dir, 'all_files_invalid_coords.txt')
+        with open(file_invalid_xml, 'w') as f:
+            for name,c,xmn,ymn,xmx,ymx in invalid_xmls:
+                f.write("%s\t%s\t%d\t%d\t%d\t%d\n" % (name, c, xmn,ymn,xmx,ymx))
+        f.close()   
+
         file_empty = os.path.join(base_dir, 'all_files_without_lbls.txt')
         with open(file_empty, 'w') as f:
             for name in empty_lbls:
                 f.write("%s\n" % name)
-        f.close()    
+        f.close()  
 
         with open(os.path.join(base_dir, 'all_duplicate_file_bbox.json'), 'w') as f: # dict of file_name:[bbox]
             json.dump(dict_duplicate_file_box, f, ensure_ascii=False, indent=3)
