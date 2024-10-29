@@ -1,106 +1,116 @@
 import os 
 from PIL import Image
 import numpy as np
+import json 
 
-def outlier_unreadable_img_detection(base_dir, outlier_thresh, abnormal_condition=0):
+def outlier_unreadable_img_detection(base_dir, outlier_thresh, abnormal_condition=0, split=None):
     '''
         outlier detection
     '''
-    split_folders = os.listdir(base_dir)
-    for sf in split_folders:
+    if split:
+        valid_folders = [split]
+    else:
+        valid_folders = ['train', 'val', 'test']
+    for sf in valid_folders:
         if not os.path.isdir(os.path.join(base_dir, sf)):
             continue
-        if split in ['train', 'val', 'test']:
-            img_dir = os.path.join(base_dir, split, 'images')
-            img_list = os.listdir(img_dir)
+        img_dir = os.path.join(base_dir, sf, 'images')
+        img_list = os.listdir(img_dir)
 
-            outlier_list = []
-            not_img_list = []
-            for i_name in img_list:
-                img_file = os.path.join(img_dir, i_name)
-                try:
-                    img = np.array(Image.open(img_file))
-                except:
-                    print('not image')
-                    img = None
-                    not_img_list.append(i_name)
-                    continue
-                # print(i_name, 'shape', img.shape) # h, w, c
-                total_num = img.shape[0]*img.shape[1]*img.shape[2]
-                abnormal_ratio = np.count_nonzero(img==abnormal_condition)/(total_num*1.)
-                if abnormal_ratio >= outlier_thresh:
-                    outlier_list.append(i_name) 
-                    
-            with open(os.path.join(base_dir, f'{split}_not_readable_imgs.txt'), 'w') as f:
-                for name in not_img_list:
-                    f.write("%s\n" % (name))
-            f.close()
+        outlier_list = []
+        not_img_list = []
+        for i_name in img_list:
+            img_file = os.path.join(img_dir, i_name)
+            try:
+                img = np.array(Image.open(img_file))
+            except:
+                print('not image')
+                img = None
+                not_img_list.append(i_name)
+                continue
+            # print(i_name, 'shape', img.shape) # h, w, c
+            total_num = img.shape[0]*img.shape[1]*img.shape[2]
+            abnormal_ratio = np.count_nonzero(img==abnormal_condition)/(total_num*1.)
+            if abnormal_ratio >= outlier_thresh:
+                outlier_list.append(i_name) 
+                
+        with open(os.path.join(base_dir, f'{sf}_not_readable_imgs.txt'), 'w') as f:
+            for name in not_img_list:
+                f.write("%s\n" % (name))
+        f.close()
 
-            with open(os.path.join(base_dir, f'{split}_outlier_imgs.txt'), 'w') as f:
-                for name in outlier_list:
-                    f.write("%s\n" % (name))
-            f.close()
+        with open(os.path.join(base_dir, f'{sf}_outlier_imgs.txt'), 'w') as f:
+            for name in outlier_list:
+                f.write("%s\n" % (name))
+        f.close()
     
     
-def empty_unreadable_check_msk_png(base_dir):
+def empty_unreadable_check_msk_png(base_dir, split=None):
     '''
         empty masks check
         unreadable masks check
     '''
-    split_folders = os.listdir(base_dir)
-    for sf in split_folders:
+    if split:
+        valid_folders = [split]
+    else:
+        valid_folders = ['train', 'val', 'test']
+    for sf in valid_folders:
         if not os.path.isdir(os.path.join(base_dir, sf)):
             continue
-        if split in ['train', 'val', 'test']:
 
-            msk_dir = os.path.join(base_dir, split, 'masks')
-            msk_list = os.listdir(msk_dir)
+        msk_dir = os.path.join(base_dir, sf, 'masks')
+        msk_list = os.listdir(msk_dir)
 
-            empty_files = []
-            unreadble_files = []
-            for msk_name in msk_list:
-                msk_file = os.path.join(msk_dir, msk_name)
-                try:
-                    img = np.array(Image.open(msk_file))
-                except:
-                    print('not image')
-                    img = None
-                    unreadble_files.append(msk_name)
-                    continue
-                empty = np.all(img==0) 
-                if empty:
-                    empty_files.append(msk_name)
-
-            with open(os.path.join(base_dir, f'{split}_empty_masks.txt'), 'w') as f:
-                for name in empty_files:
-                    f.write("%s\n" % name)
-            f.close()
-
-            with open(os.path.join(base_dir, f'{split}_unreadable_masks.txt'), 'w') as f:
-                for name in unreadble_files:
-                    f.write("%s\n" % name)
-            f.close()
-
-
-def check_msk_id(base_dir, num_cls):
-    split_folders = os.listdir(base_dir)
-    for sf in split_folders:
-        if not os.path.isdir(os.path.join(base_dir, sf)):
-            continue
-        invalid_msk_id_files = []
-        if split in ['train', 'val', 'test']:
-            msk_dir = os.path.join(base_dir, split, 'masks')
-            msk_list = os.listdir(msk_dir)
-
-            for msk_name in msk_list:
-                msk_file = os.path.join(msk_dir, msk_name)
+        empty_files = []
+        unreadble_files = []
+        for msk_name in msk_list:
+            msk_file = os.path.join(msk_dir, msk_name)
+            try:
                 img = np.array(Image.open(msk_file))
-                if img.min()<0 or img.max()>=num_cls:
-                    invalid_msk_id_files.append(msk_name)
+            except:
+                print('not image')
+                img = None
+                unreadble_files.append(msk_name)
+                continue
+            empty = np.all(img==0) 
+            if empty:
+                empty_files.append(msk_name)
 
-        with open(os.path.join(base_dir, f'{split}_invalid_msk_id_files.txt'), 'w') as f:
-            for name in invalid_msk_id_files:
-                f.write("%s\n" % (name))
+        with open(os.path.join(base_dir, f'{sf}_empty_masks.txt'), 'w') as f:
+            for name in empty_files:
+                f.write("%s\n" % name)
+        f.close()
+
+        with open(os.path.join(base_dir, f'{sf}_unreadable_masks.txt'), 'w') as f:
+            for name in unreadble_files:
+                f.write("%s\n" % name)
+        f.close()
+
+
+def check_msk_id(base_dir, num_cls, split=None):
+    if split:
+        valid_folders = [split]
+    else:
+        valid_folders = ['train', 'val', 'test']
+    for sf in valid_folders:
+        if not os.path.isdir(os.path.join(base_dir, sf)):
+            continue
+        dict_invalid_msk_cid = {}
+        msk_dir = os.path.join(base_dir, sf, 'masks')
+        msk_list = os.listdir(msk_dir)
+
+        for msk_name in msk_list:
+            msk_file = os.path.join(msk_dir, msk_name)
+            img = np.array(Image.open(msk_file))
+            # if img[img<0]
+            # if img.min()<0 or img.max()>=num_cls:
+            #     invalid_msk_id_files.append(msk_name)
+            outlier_values = np.unique(img[(img < 0) | (img > num_cls)])
+            if outlier_values.shape[0]:
+                dict_invalid_msk_cid[msk_name] = outlier_values.tolist()
+                    
+        with open(os.path.join(base_dir, f'{sf}_invalid_msk_id_files.txt'), 'w') as f:
+            json.dump(dict_invalid_msk_cid, f, ensure_ascii=False, indent=3)
         f.close()
 
 if __name__ == "__main__":

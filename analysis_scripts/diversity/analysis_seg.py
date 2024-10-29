@@ -8,9 +8,12 @@ title_fontdict = {'family' : 'Microsoft YaHei', 'size': 16}
 fontdict={"family": "SimHei", "size": 14}
 
 
-def stat_msk(source_dir, label_imgnum_thresh=20):
-    split_folders = ['train', 'val', 'test']
-    for sf in split_folders:
+def stat_msk(source_dir, img_suffix, msk_suffix, label_imgnum_thresh=20, split=None):
+    if split:
+        valid_folders = [split]
+    else:
+        valid_folders = ['train', 'val', 'test']
+    for sf in valid_folders:
         if not os.path.isdir(os.path.join(source_dir, sf)):
             continue
         src_img_dir = os.path.join(source_dir, sf, 'images')
@@ -20,14 +23,20 @@ def stat_msk(source_dir, label_imgnum_thresh=20):
         img_num = len(ori_names)
         ori_masks = os.listdir(src_msk_dir)
         ori_masks.sort()
+        msk_num = len(ori_masks)
+        if img_num>msk_num: # masks 
+            file_names = [m.split('.')[0] for m in ori_masks]
+        else: # images 
+            file_names = [m.split('.')[0] for m in ori_names]
         im_hw_list = []
         dict_cat_imgname = {}
         dict_cat_area = {}
-        for ix, im_name in enumerate(ori_names):
-            img = np.array(Image.open(os.path.join(src_img_dir, im_name)))
+        for ix, im_name in enumerate(file_names):
+            img = np.array(Image.open(os.path.join(src_img_dir, f'{im_name}{img_suffix}')))
             h, w, _ = img.shape
             im_hw_list.append((h,w))
-            msk = np.array(Image.open(os.path.join(src_msk_dir, ori_masks[ix])))
+            # print(os.path.join(src_msk_dir, ori_masks[ix]))
+            msk = np.array(Image.open(os.path.join(src_msk_dir, f'{im_name}{msk_suffix}')))
             cat_ids = np.unique(msk)
             for cid in cat_ids:
                 cid = int(cid)
@@ -66,43 +75,45 @@ def stat_msk(source_dir, label_imgnum_thresh=20):
         f.close() 
 
 
-def ana_msk(source_dir):
-    split_folders = os.listdir(source_dir)
-    for sf in split_folders:
+def ana_msk(source_dir, split=None):
+    if split:
+        valid_folders = [split]
+    else:
+        valid_folders = ['train', 'val', 'test']
+    for sf in valid_folders:
         if not os.path.isdir(os.path.join(source_dir, sf)):
             continue
-        if sf in ['train', 'val', 'test']:
-            dict_imgnum = json.load(open(os.path.join(source_dir, f'{sf}_cat_imgnum.json')))
-            plt.figure()
-            plt.bar(x=dict_imgnum.keys(), height=dict_imgnum.values())
-            plt.xlabel('类别', fontdict=fontdict)
-            plt.ylabel('图片数量', fontdict=fontdict)
-            plt.title('类别多样性', fontdict=title_fontdict)
-            plt.savefig(os.path.join(source_dir, f'{sf}_cat_imgnum.jpg'))
-            plt.show()
+        dict_imgnum = json.load(open(os.path.join(source_dir, f'{sf}_cat_imgnum.json')))
+        plt.figure()
+        plt.bar(x=dict_imgnum.keys(), height=dict_imgnum.values())
+        plt.xlabel('类别', fontdict=fontdict)
+        plt.ylabel('图片数量', fontdict=fontdict)
+        plt.title('类别多样性', fontdict=title_fontdict)
+        plt.savefig(os.path.join(source_dir, f'{sf}_cat_imgnum.jpg'))
+        plt.show()
 
-            arr_imghw = np.loadtxt(os.path.join(source_dir, f'{sf}_img_hw.csv'), delimiter=',', dtype=np.int32)
-            plt.figure()
-            for h,w in arr_imghw:
-                plt.scatter(x=w, y=h,  marker='o')
-            plt.xlabel('图片宽度', fontdict=fontdict)
-            plt.ylabel('图片高度', fontdict=fontdict)
-            plt.title('图片尺寸多样性', fontdict=title_fontdict)
-            plt.savefig(os.path.join(source_dir, f'{sf}_img_hw.jpg'))
-            plt.show()
+        arr_imghw = np.loadtxt(os.path.join(source_dir, f'{sf}_img_hw.csv'), delimiter=',', dtype=np.int32)
+        plt.figure()
+        for h,w in arr_imghw:
+            plt.scatter(x=w, y=h,  marker='o')
+        plt.xlabel('图片宽度', fontdict=fontdict)
+        plt.ylabel('图片高度', fontdict=fontdict)
+        plt.title('图片尺寸多样性', fontdict=title_fontdict)
+        plt.savefig(os.path.join(source_dir, f'{sf}_img_hw.jpg'))
+        plt.show()
 
-            dict_cat_area = json.load(open(os.path.join(source_dir, f'{sf}_cat_area.json')))
-            plt.figure(figsize=(15,10))
-            # colors = np.array(plt.cm.Set2.colors)
-            for k,area_list in dict_cat_area.items():
-                # for area in area_list:
-                #     plt.scatter(x=k, y=area, marker='o')
+        dict_cat_area = json.load(open(os.path.join(source_dir, f'{sf}_cat_area.json')))
+        plt.figure(figsize=(15,10))
+        # colors = np.array(plt.cm.Set2.colors)
+        for k,area_list in dict_cat_area.items():
+            # for area in area_list:
+            #     plt.scatter(x=k, y=area, marker='o')
 
-                ## mean area size
-                plt.scatter(x=k, y=np.mean(area_list), marker='o')
+            ## mean area size
+            plt.scatter(x=k, y=np.mean(area_list), marker='o')
 
-            plt.xlabel('类别', fontdict=fontdict, rotation=90)
-            plt.ylabel('类别平均面积', fontdict=fontdict)
-            plt.title('类别平均面积多样性', fontdict=title_fontdict)
-            plt.savefig(os.path.join(source_dir, f'{sf}_cat_area.jpg'))
-            plt.show()
+        plt.xlabel('类别', fontdict=fontdict, rotation=90)
+        plt.ylabel('类别平均面积', fontdict=fontdict)
+        plt.title('类别平均面积多样性', fontdict=title_fontdict)
+        plt.savefig(os.path.join(source_dir, f'{sf}_cat_area.jpg'))
+        plt.show()

@@ -38,7 +38,7 @@ def convert_coco_to_png(base_dir, src_split='val2017', split='val'):
     js_file = os.path.join(base_dir, 'annotations', f'instances_{src_split}.json')
     js = json.load(open(js_file))
     img_list = js['images']
-    dict_img_wh = {}
+    dict_img_id_wh = {}
     dict_img_id_name = {}
     duplicate_imginfo_list = []
     for img_info in img_list:
@@ -49,11 +49,11 @@ def convert_coco_to_png(base_dir, src_split='val2017', split='val'):
             duplicate_imginfo_list.append(img_id)
             continue # duplicate is ignored
 
-        dict_img_wh[img_info['id']] = (img_info['width'], img_info['height'])
-        dict_img_id_name[img_info['id']] = img_info['file_name']
+        dict_img_id_wh[img_id] = (img_info['width'], img_info['height'])
+        dict_img_id_name[img_id] = img_info['file_name']
     
-    dumplicat_imginfo_file = os.path.join(base_dir, f'{split}_duplicate_imginfo.txt')
-    with open(dumplicat_imginfo_file, 'w') as f:
+    dumplicate_imginfo_file = os.path.join(base_dir, f'{split}_duplicate_imginfo.txt')
+    with open(dumplicate_imginfo_file, 'w') as f:
         for imgid in duplicate_imginfo_list:
             f.write("%d\n" % (imgid))
     f.close()
@@ -82,10 +82,10 @@ def convert_coco_to_png(base_dir, src_split='val2017', split='val'):
         else:
             dict_cats_super_children[super_cat].append(cat_name)
 
-    dumplicat_catinfo_file = os.path.join(base_dir, f'{split}_duplicate_catinfo.txt')
-    with open(dumplicat_catinfo_file, 'w') as f:
-        for catid in duplicate_catinfo_list:
-            f.write("%d\n" % (catid))
+    dumplicate_catinfo_file = os.path.join(base_dir, f'{split}_duplicate_catinfo.txt')
+    with open(dumplicate_catinfo_file, 'w') as f:
+        for aid in duplicate_catinfo_list:
+            f.write("category_id:%d\n" % (aid))
     f.close()
 
     with open(os.path.join(base_dir, f'{split}_dict_cat_super_children.json'), 'w') as f: # dict of supercategory:[cat1,cat2,...]
@@ -97,27 +97,53 @@ def convert_coco_to_png(base_dir, src_split='val2017', split='val'):
     f.close() 
 
     anns_list = js['annotations']
-    dict_imgname_segs = {}
+    dict_imgid_segs = {}
+    dict_invalide_id_segs = {}
+    ann_id_list = []
+    duplicate_annid_list = []
     for ann in anns_list:
+        ann_id = ann['id']
+        if ann_id in ann_id_list: # duplicat ann id
+            duplicate_annid_list.append(ann_id)
+        else:
+            ann_id_list.append(ann_id)
+
         img_id = ann['image_id']
-        img_name = dict_img_id_name[img_id]
+        # img_name = dict_img_id_name[img_id]
         cat_id = ann['category_id']
         iscrowd = ann['iscrowd']
+        # check segmeantaions
+        if 'segmentation' not in ann.keys():
+            if ann_id not in dict_invalide_id_segs.keys():
+                dict_invalide_id_segs[ann_id] = [None]
+            else:
+                dict_invalide_id_segs[ann_id].append(None)
+            continue
+        else:# check segmeantaions
+            segmentations = ann['segmentation'] # tl_x tl_y w h
+            if len(segmentations) == 0:
+                dict_invalide_id_segs[ann_id] = segmentations
+                continue
+        
         segmentations = ann['segmentation']
-        if img_name not in dict_imgname_segs.keys():
-            dict_imgname_segs[img_name] = [(cat_id, iscrowd, segmentations)]
+        if img_id not in dict_imgid_segs.keys():
+            dict_imgid_segs[img_id] = [(cat_id, iscrowd, segmentations)]
         else:
-            dict_imgname_segs[img_name].append((cat_id, iscrowd, segmentations))
+            dict_imgid_segs[img_id].append((cat_id, iscrowd, segmentations))
     
     mask_dir = os.path.join(base_dir, split, 'masks')
     make_folder_if_not(mask_dir)
     image_dir = os.path.join(base_dir, split,'images')
     img_list = os.listdir(image_dir)
-    for img_name, cid_crowd_segs in dict_imgname_segs.items():
+    for img_id, cid_crowd_segs in dict_imgid_segs.items():
+        # if img_id ==411530:
+        #     print('img_id')
+        iname = dict_img_id_name[img_id]
         # for test
-        if img_name not in img_list:
+        if iname not in img_list:
             continue
-        mask = np.zeros((img_info['height'], img_info['width']), dtype=np.int32)
+        img_w, img_h = dict_img_id_wh[img_id]
+        mask = np.zeros((img_h, img_w), dtype=np.int32)
         rle_msk = None
         for cid, iscrowd, segs in cid_crowd_segs:
             if iscrowd: # 1 RLE
@@ -126,20 +152,39 @@ def convert_coco_to_png(base_dir, src_split='val2017', split='val'):
                 # print('rle msk', rle_msk.shape)
             else: # 0 Poly
                 for seg in segs:
+                    if len(seg)==0:
+                        if ann_id not in dict_invalide_id_segs.keys():
+                            dict_invalide_id_segs[ann_id] = [[]]
+                        else:
+                            dict_invalide_id_segs[ann_id].append([])
+                        continue 
                     # getting the points
                     xs = seg[0::2]
                     ys = seg[1::2]
+                    # check segmeantaions
+                    if any([x<0 for x in xs]) or any([y<0 for y in ys]) or  any([x>img_w for x in xs]) or any([y>img_h for y in ys]):
+                        if ann_id not in dict_invalide_id_segs.keys():
+                            dict_invalide_id_segs[ann_id] = [seg]
+                        else:
+                            dict_invalide_id_segs[ann_id].append(seg)
+                        continue
                     pts = np.array([[x, y] for x, y in zip(xs, ys)], dtype=np.int32)
                     pts = pts.reshape((-1, 1, 2))
-                    # draw the points on the mask image.
-                    try:
-                        mask = cv2.fillPoly(mask, [pts], cid)
-                    except Exception as e:
-                        print(f"[ERROR] error for {img_name}, len={len(pts)}")
-            if not rle_msk is None:
-                mask[rle_msk!=0] = rle_msk[rle_msk!=0]
-            cv2.imwrite(os.path.join(mask_dir, img_name), mask)
+                    # draw the points on the mask image
+                    mask = cv2.fillPoly(mask, [pts], cid)
+                if not rle_msk is None:
+                    mask[rle_msk!=0] = rle_msk[rle_msk!=0]
+        cv2.imwrite(os.path.join(mask_dir, iname), mask)
+    
+    with open(os.path.join(base_dir, f'{split}_invalid_annid_segs.json'), 'w') as f: # dict of invalid ann_id:segs
+        json.dump(dict_invalide_id_segs, f, ensure_ascii=False, indent=3)
+    f.close() 
 
+    dumplicate_ann_id_file = os.path.join(base_dir, f'{split}_duplicate_annid.txt')
+    with open(dumplicate_ann_id_file, 'w') as f:
+        for aid in duplicate_annid_list:
+            f.write("%d\n" % (aid))
+    f.close()
 
 def move_imgs_to_specified_folder(base_dir, src_split='val2017', split='val'):    
     '''
