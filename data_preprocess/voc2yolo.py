@@ -30,7 +30,7 @@ def covert_voc_to_yolo(base_dir):
     index = 0
     dict_duplicate_file_box = {}
     empty_lbls = []
-    invalid_xmls = []
+    dict_invalid_bbx_xmls = {}
     
     for xf in xml_files:
         file_name = os.path.basename(xf)
@@ -50,16 +50,40 @@ def covert_voc_to_yolo(base_dir):
                 dict_cats[cat] = index
                 index += 1
             bndbox = obj.find('bndbox')
-            xmin = float(bndbox.findtext('xmin')) - 1
-            ymin = float(bndbox.findtext('ymin')) - 1
-            xmax = float(bndbox.findtext('xmax'))
-            ymax = float(bndbox.findtext('ymax'))
-            box = [xmin, ymin, xmax, ymax]
             # check invlid coordinates
-            if xmin < -1 or ymin <-1 or xmax >img_width or ymax >img_height:
-                invalid_xmls.append([file_name, cat, xmin, ymin, xmax, ymax])
+            if bndbox is None: # FIXME:  box None 
+                if file_name not in dict_invalid_bbx_xmls.keys():
+                    dict_invalid_bbx_xmls[file_name]= [[cat, None, None, None, None]]
+                else:
+                    dict_invalid_bbx_xmls[file_name].append([cat, None, None, None, None])
+                continue
+            sxmin = bndbox.findtext('xmin')
+            symin = bndbox.findtext('ymin')
+            sxmax = bndbox.findtext('xmax')
+            symax = bndbox.findtext('ymax')
+            
+            xmin = float(sxmin) - 1 if sxmin else None
+            ymin = float(symin) - 1 if symin else None
+            xmax = float(sxmax) if sxmax else None
+            ymax = float(symax) if symax else None
+           
+            # check invlid coordinates
+            if xmin is None or ymin is None or xmax is None or ymax is None: # FIXME: None is reaplaced by -10000
+                if file_name not in dict_invalid_bbx_xmls.keys():
+                    dict_invalid_bbx_xmls[file_name]= [[cat,xmin, ymin, xmax, ymax]]
+                else:
+                    dict_invalid_bbx_xmls[file_name].append([cat,xmin, ymin, xmax, ymax])
+                continue
+            
+            # check invlid coordinates
+            if xmin < 0 or ymin < 0 or xmax >img_width or ymax >img_height:
+                if file_name not in dict_invalid_bbx_xmls.keys():
+                    dict_invalid_bbx_xmls[file_name]= [[cat,xmin, ymin, xmax, ymax]]
+                else:
+                    dict_invalid_bbx_xmls[file_name].append([cat,xmin, ymin, xmax, ymax])
                 continue
 
+            box = [xmin, ymin, xmax, ymax]
             # check duplicate
             if box not in oribox_list:
                 oribox_list.append(box)
@@ -80,13 +104,12 @@ def covert_voc_to_yolo(base_dir):
         lbl_file = os.path.join(txt_dir, os.path.basename(xf).replace('.xml', '.txt'))
         with open(lbl_file, 'w') as f:
             for cat_id, cx,cy,w,h in lbl_list:
-                f.write("%d\t%.4f\t%.4f\t%.4f\t%.4f\n" % (cat_id, cx, cy, w, h))
+                f.write("%d,%.4f,%.4f,%.4f,%.4f\n" % (cat_id, cx, cy, w, h))
         f.close() 
 
-        file_invalid_xml = os.path.join(base_dir, 'all_files_invalid_coords.txt')
+        file_invalid_xml = os.path.join(base_dir, 'all_files_invalid_coords.json')
         with open(file_invalid_xml, 'w') as f:
-            for name,c,xmn,ymn,xmx,ymx in invalid_xmls:
-                f.write("%s\t%s\t%d\t%d\t%d\t%d\n" % (name, c, xmn,ymn,xmx,ymx))
+            json.dump(dict_invalid_bbx_xmls, f, ensure_ascii=False, indent=3)
         f.close()   
 
         file_empty = os.path.join(base_dir, 'all_files_without_lbls.txt')

@@ -57,7 +57,7 @@ def convert_coco_to_yolo(base_dir, src_split='val2017', split='val'):
         # FIXME: check duplicate?
         if cat_id in dict_cat_id_name.keys():
             print(f'label info of category {cat_id} is duplicate!')
-            duplicate_catinfo_list.append(cat_id)
+            duplicate_catinfo_list.append(cat_info)
             continue # duplicate is ignored
 
         dict_cat_id_name[cat_id] = cat_name
@@ -69,8 +69,8 @@ def convert_coco_to_yolo(base_dir, src_split='val2017', split='val'):
 
     dumplicat_catinfo_file = os.path.join(base_dir, f'{split}_duplicate_catinfo.txt')
     with open(dumplicat_catinfo_file, 'w') as f:
-        for catid in duplicate_catinfo_list:
-            f.write("%d\n" % (catid))
+        for catinfo in duplicate_catinfo_list:
+            f.write("%s\n" % (catinfo))
     f.close()
 
     with open(os.path.join(base_dir, f'{split}_dict_cat_super_children.json'), 'w') as f: # dict of supercategory:[cat1,cat2,...]
@@ -85,13 +85,23 @@ def convert_coco_to_yolo(base_dir, src_split='val2017', split='val'):
     dict_imgname_anns = {}
     
     duplicate_imgid_annid_bbox = []
+    dict_imgid_bbox = {}
+    dict_invalid_bbox = {}
     for ann in anns_list:
-        dict_imgid_bbox = {}
         ann_id = ann['id']
         img_id = ann['image_id']
         img_name = dict_img_id_name[img_id]
         cat_id = ann['category_id']
-        bbox = ann['bbox'] # tl_x tl_y w h
+        # check bbox
+        if 'bbox' not in ann.keys():
+            dict_invalid_bbox[ann_id] = None
+            continue
+        else:
+            bbox = ann['bbox'] # tl_x tl_y w h
+            if len(bbox) !=4:
+                dict_invalid_bbox[ann_id] = bbox
+                continue
+
         if img_id not in dict_imgid_bbox.keys():
             dict_imgid_bbox[img_id] = [bbox]
         else: # duplicate bbox
@@ -100,6 +110,13 @@ def convert_coco_to_yolo(base_dir, src_split='val2017', split='val'):
                 duplicate_imgid_annid_bbox.append((img_id, ann_id, bbox))
 
         img_width, img_height = dict_img_wh.get(img_id)
+
+        # check bbox
+        if any([x<0 for x in bbox]):
+            dict_invalid_bbox[ann_id] = bbox
+        if bbox[0]+bbox[2] > img_width or bbox[1]+bbox[3] > img_height:
+            dict_invalid_bbox[ann_id] = bbox
+
         cx = (bbox[0] + bbox[2]/2. - 1)/img_width
         cy = (bbox[1] + bbox[3]/2. - 1)/img_height
         reg_w = bbox[2]/img_width
@@ -110,11 +127,18 @@ def convert_coco_to_yolo(base_dir, src_split='val2017', split='val'):
         else:
             dict_imgname_anns[img_name].append(cid_cxy_wh)
 
+    with open(os.path.join(base_dir, f'{split}_ori_invalid_annid_bbox.json'), 'w') as f:
+        json.dump(dict_invalid_bbox, f, ensure_ascii=False, indent=3)
+        f.close()
     
-    dumplicat_anno_file = os.path.join(base_dir, f'{split}_duplicate_imgid_annid_bbox.txt')
-    with open(dumplicat_anno_file, 'w') as f:
-        for imgid, annid, box in duplicate_imgid_annid_bbox:
-            f.write("%d\t%d\t%.2f\t%.2f\t%.2f\t%.2f\n" % (imgid, annid, box[0], box[1], box[2], box[3]))
+    dumplicate_anno_file = os.path.join(base_dir, f'{split}_ori_duplicate_imgid_annid_bbox.txt')
+    with open(dumplicate_anno_file, 'w') as f:
+        for ix, (imgid, annid, box) in enumerate(duplicate_imgid_annid_bbox):
+            if ix==0:
+                f.write("%s,%s,%s,%s,%s,%s\n" % ("image_id", "ann_id", "bbx_tlx", "bbx_tly", "bbx_w", "bbx_h"))
+                f.write("%d,%d,%.2f,%.2f,%.2f,%.2f\n" % (imgid, annid, box[0], box[1], box[2], box[3]))
+            else:
+                f.write("%d,%d,%.2f,%.2f,%.2f,%.2f\n" % (imgid, annid, box[0], box[1], box[2], box[3]))
     f.close()
 
     dst_lbl_dir = os.path.join(base_dir, split, 'labels')
@@ -124,7 +148,7 @@ def convert_coco_to_yolo(base_dir, src_split='val2017', split='val'):
         lbl_file = os.path.join(dst_lbl_dir, lbl_name)
         with open(lbl_file, 'w') as f:
             for cid, cx, cy, w, h in anns:
-                f.write('%d\t%.4f\t%.4f\t%.4f\t%.4f\n' % (cid, cx, cy, w, h))
+                f.write('%d,%.4f,%.4f,%.4f,%.4f\n' % (cid, cx, cy, w, h))
         f.close()
 
 def move_imgs_to_specified_folder(base_dir, src_split='val2017', split='val'):    
