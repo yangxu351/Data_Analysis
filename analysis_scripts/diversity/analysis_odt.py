@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import json 
 import matplotlib.pyplot as plt
+from analysis_scripts.correctness.odt_correct import empty_lbl_check_by_file
 plt.get_cmap('Set3')
 title_fontdict = {'family' : 'Microsoft YaHei', 'size': 16}
 fontdict={"family": "SimHei", "size": 14}
@@ -18,78 +19,89 @@ def get_bbx_wh(lbl, w, h):
     # return arr_lbl[:,0].astype(np.int16), np.round(arr_lbl[:, 3:5], decimals=2)
     return np.array(list(zip(lbl.iloc[:, 0], np.round(arr_lbl[:, 3], decimals=2), np.round(arr_lbl[:, 4], decimals=2))))
 
-def stat_odt(source_dir, label_imgnum_thresh=20, img_suffix='.jpg', dst_lbl_suffix='.txt'):
-    split_folders = ['train', 'val', 'test'] # 
-    for sf in split_folders:
-        if not os.path.isdir(os.path.join(source_dir, sf)):
-            continue
-        src_img_dir = os.path.join(source_dir, sf, 'images')
-        src_lbl_dir = os.path.join(source_dir, sf, 'labels')    
-        ori_imgs = os.listdir(src_img_dir)
-        ori_imgs.sort()
-        img_num = len(ori_imgs)
-        ori_lbls = os.listdir(src_lbl_dir)
-        ori_lbls.sort()
-        lbl_num = len(ori_lbls)
-        
-        if img_num>lbl_num: # labels 
-            file_names = [l.split('.')[0] for l in ori_lbls]
-        else: # images 
-            file_names = [m.split('.')[0] for m in ori_imgs]
-        im_hw_list = []
-        dict_cat_bbxhw = {}
-        dict_cat_imgname = {}
-        for ix, name in enumerate(file_names):
-            im_name = name + img_suffix
-            img = np.array(Image.open(os.path.join(src_img_dir, im_name)))
-            # print('ori shape',  img.shape) # h,w,c
-            h, w, _ = img.shape
-            im_hw_list.append((h,w))
-            # print('image name', im_name)
-            lbl_file = os.path.join(src_lbl_dir, f"{name}{dst_lbl_suffix}")
-            lbl = pd.read_csv(lbl_file, header=None, delimiter='\t')
-            arr_cat_bbxwh = get_bbx_wh(lbl, w, h)
-            for cx in range(arr_cat_bbxwh.shape[0]):
-                cat_id = int(arr_cat_bbxwh[cx, 0])
-                if cat_id not in dict_cat_bbxhw.keys():
-                    dict_cat_bbxhw[cat_id] = [(arr_cat_bbxwh[cx, 1],arr_cat_bbxwh[cx, 2])]
-                    dict_cat_imgname[cat_id] = [im_name]
-                else:
-                    dict_cat_bbxhw[cat_id].append((arr_cat_bbxwh[cx, 1],arr_cat_bbxwh[cx, 2]))
-                    if im_name not in dict_cat_imgname[cat_id]:
-                        dict_cat_imgname[cat_id].append(im_name)
-        arr_img_hw = np.ones((len(im_hw_list), 2))
-        for lx, (h, w) in enumerate(im_hw_list):
-            arr_img_hw[lx, 0] = h
-            arr_img_hw[lx, 1] = w
-        np.savetxt(os.path.join(source_dir, f'{sf}_img_hw.csv'), arr_img_hw, delimiter=',', fmt='%.2f') # 图像尺寸多样性
-
-        with open(os.path.join(source_dir, f'{sf}_cat_bbxhw.json'), 'w') as f: # 类别尺寸多样性
-            json.dump(dict_cat_bbxhw, f, ensure_ascii=False, indent=3)
-        f.close()
-
-        dict_cat_imgnum = {k:len(v) for k,v in dict_cat_imgname.items()}
-        with open(os.path.join(source_dir, f'{sf}_cat_imgnum.json'), 'w') as f: # 类别多样性
-            json.dump(dict_cat_imgnum, f, ensure_ascii=False, indent=3)
-        f.close()
-
-        dict_rel_lbl_diver = {k:1.*len(v)/img_num for k,v in dict_cat_imgname.items()}
-        with open(os.path.join(source_dir, f'{sf}_relative_cat_diversity.json'), 'w') as f: # 相对类别多样性
-            json.dump(dict_rel_lbl_diver, f, ensure_ascii=False, indent=3)
-        f.close() 
-
-        dict_lbl_size_diver = {k: 1 if len(v)<label_imgnum_thresh else 0 for k,v in dict_cat_imgname.items()}
-        lbl_size_diver = 1.*sum(dict_lbl_size_diver.values())/len(dict_lbl_size_diver.keys())
-        with open(os.path.join(source_dir, f'{sf}_cat_size_diversity.txt'), 'w') as f: # 类别大小多样性
-            f.write(f'{lbl_size_diver*100}%\n')
-        f.close() 
-
-def ana_odt(source_dir):
+def stat_odt(source_dir, label_imgnum_thresh=20, img_suffix='.jpg', dst_lbl_suffix='.txt', split=None):
     split_folders = os.listdir(source_dir)
+    if split:
+        valid_folders = [split]
+    else:
+        valid_folders = ['train', 'val', 'test']
     for sf in split_folders:
         if not os.path.isdir(os.path.join(source_dir, sf)):
             continue
-        if sf in ['train', 'val', 'test']:
+        if sf in valid_folders:
+            src_img_dir = os.path.join(source_dir, sf, 'images')
+            src_lbl_dir = os.path.join(source_dir, sf, 'labels')    
+            ori_imgs = os.listdir(src_img_dir)
+            ori_imgs.sort()
+            img_num = len(ori_imgs)
+            ori_lbls = os.listdir(src_lbl_dir)
+            ori_lbls.sort()
+            lbl_num = len(ori_lbls)
+            
+            if img_num>lbl_num: # labels 
+                file_names = [l.split('.')[0] for l in ori_lbls]
+            else: # images 
+                file_names = [m.split('.')[0] for m in ori_imgs]
+            im_hw_list = []
+            dict_cat_bbxhw = {}
+            dict_cat_imgname = {}
+            for ix, name in enumerate(file_names):
+                im_name = name + img_suffix
+                img = np.array(Image.open(os.path.join(src_img_dir, im_name)))
+                # print('ori shape',  img.shape) # h,w,c
+                h, w, _ = img.shape
+                im_hw_list.append((h,w))
+                # print('image name', im_name)
+                lbl_file = os.path.join(src_lbl_dir, f"{name}{dst_lbl_suffix}")
+                if not os.path.exists(lbl_file) or empty_lbl_check_by_file(lbl_file):
+                    continue
+                lbl = pd.read_csv(lbl_file, header=None, delimiter=',')
+                arr_cat_bbxwh = get_bbx_wh(lbl, w, h)
+                for cx in range(arr_cat_bbxwh.shape[0]):
+                    cat_id = int(arr_cat_bbxwh[cx, 0])
+                    if cat_id not in dict_cat_bbxhw.keys():
+                        dict_cat_bbxhw[cat_id] = [(arr_cat_bbxwh[cx, 1],arr_cat_bbxwh[cx, 2])]
+                        dict_cat_imgname[cat_id] = [im_name]
+                    else:
+                        dict_cat_bbxhw[cat_id].append((arr_cat_bbxwh[cx, 1],arr_cat_bbxwh[cx, 2]))
+                        if im_name not in dict_cat_imgname[cat_id]:
+                            dict_cat_imgname[cat_id].append(im_name)
+            arr_img_hw = np.ones((len(im_hw_list), 2))
+            for lx, (h, w) in enumerate(im_hw_list):
+                arr_img_hw[lx, 0] = h
+                arr_img_hw[lx, 1] = w
+            np.savetxt(os.path.join(source_dir, f'{sf}_img_hw.csv'), arr_img_hw, delimiter=',', fmt='%.2f') # 图像尺寸多样性
+
+            with open(os.path.join(source_dir, f'{sf}_cat_bbxhw.json'), 'w') as f: # 类别尺寸多样性
+                json.dump(dict_cat_bbxhw, f, ensure_ascii=False, indent=3)
+            f.close()
+
+            dict_cat_imgnum = {k:len(v) for k,v in dict_cat_imgname.items()}
+            with open(os.path.join(source_dir, f'{sf}_cat_imgnum.json'), 'w') as f: # 类别多样性
+                json.dump(dict_cat_imgnum, f, ensure_ascii=False, indent=3)
+            f.close()
+
+            dict_rel_lbl_diver = {k:1.*len(v)/img_num for k,v in dict_cat_imgname.items()}
+            with open(os.path.join(source_dir, f'{sf}_relative_cat_diversity.json'), 'w') as f: # 相对类别多样性
+                json.dump(dict_rel_lbl_diver, f, ensure_ascii=False, indent=3)
+            f.close() 
+
+            dict_lbl_size_diver = {k: 1 if len(v)<label_imgnum_thresh else 0 for k,v in dict_cat_imgname.items()}
+            lbl_size_diver = 1.*sum(dict_lbl_size_diver.values())/len(dict_lbl_size_diver.keys())
+            with open(os.path.join(source_dir, f'{sf}_cat_size_diversity.txt'), 'w') as f: # 类别大小多样性
+                f.write(f'{lbl_size_diver*100}%\n')
+            f.close() 
+
+def ana_odt(source_dir, split=None):
+    split_folders = os.listdir(source_dir)
+    if split:
+        valid_folders = [split]
+    else:
+        valid_folders = ['train', 'val', 'test']
+    for sf in split_folders:
+        if not os.path.isdir(os.path.join(source_dir, sf)):
+            continue
+        if sf in valid_folders:
             arr_img_hw = np.loadtxt(os.path.join(source_dir, f'{sf}_img_hw.csv'), delimiter=',')
             plt.figure()
             for h,w in arr_img_hw:
