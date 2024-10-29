@@ -22,13 +22,13 @@ def does_match_img_lbl(base_dir, split=None):
         file_names = [x for x in img_name_wo_suffix if x in lbl_name_wo_suffix]
         if len(lbl_list)>len(file_names):
             print('labels more than images!!!')
-            lbl_woimg_list = [os.path.join(lbl_dir, name) for name in lbl_list if name.split('.')[0] not in img_name_wo_suffix]
+            lbl_woimg_list = [name for name in lbl_list if name.split('.')[0] not in img_name_wo_suffix]
             arr_lbl_woimg = np.array(lbl_woimg_list)
             np.savetxt(os.path.join(base_dir, f'{sf}_lbl_without_img.csv'), arr_lbl_woimg, fmt='%s')
 
         elif len(img_list)>len(file_names):
             print('images more than labels!!!')
-            img_wolbl_list = [os.path.join(img_dir, name) for name in img_list if name.split('.')[0] not in lbl_name_wo_suffix]
+            img_wolbl_list = [name for name in img_list if name.split('.')[0] not in lbl_name_wo_suffix]
             arr_img_wolbl = np.array(img_wolbl_list)
             np.savetxt(os.path.join(base_dir, f'{sf}_img_without_lbl.csv'), arr_img_wolbl, fmt='%s')
 
