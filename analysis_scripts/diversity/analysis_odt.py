@@ -33,15 +33,12 @@ def stat_odt(source_dir, label_imgnum_thresh=20, img_suffix='.jpg', dst_lbl_suff
             src_lbl_dir = os.path.join(source_dir, sf, 'labels')    
             ori_imgs = os.listdir(src_img_dir)
             ori_imgs.sort()
+            ori_imgs_wo_suffix = [x.split('.')[0] for x in ori_imgs]
             img_num = len(ori_imgs)
             ori_lbls = os.listdir(src_lbl_dir)
             ori_lbls.sort()
-            lbl_num = len(ori_lbls)
-            
-            if img_num>lbl_num: # labels 
-                file_names = [l.split('.')[0] for l in ori_lbls]
-            else: # images 
-                file_names = [m.split('.')[0] for m in ori_imgs]
+            ori_lbls_wo_suffix = [x.split('.')[0] for x in ori_lbls]
+            file_names = [x for x in ori_imgs_wo_suffix if x in ori_lbls_wo_suffix]
             im_hw_list = []
             dict_cat_bbxhw = {}
             dict_cat_imgname = {}

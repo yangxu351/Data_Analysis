@@ -18,16 +18,14 @@ def stat_msk(source_dir, img_suffix, msk_suffix, label_imgnum_thresh=20, split=N
             continue
         src_img_dir = os.path.join(source_dir, sf, 'images')
         src_msk_dir = os.path.join(source_dir, sf, 'masks')    
-        ori_names = os.listdir(src_img_dir)
-        ori_names.sort()
-        img_num = len(ori_names)
+        ori_imgs = os.listdir(src_img_dir)
+        ori_imgs.sort()
+        ori_imgs_wo_suffix = [x.split('.')[0] for x in ori_imgs]
+        img_num = len(ori_imgs)
         ori_masks = os.listdir(src_msk_dir)
         ori_masks.sort()
-        msk_num = len(ori_masks)
-        if img_num>msk_num: # masks 
-            file_names = [m.split('.')[0] for m in ori_masks]
-        else: # images 
-            file_names = [m.split('.')[0] for m in ori_names]
+        ori_msks_wo_suffix = [x.split('.')[0] for x in ori_masks]
+        file_names = [x for x in ori_imgs_wo_suffix if x in ori_msks_wo_suffix]
         im_hw_list = []
         dict_cat_imgname = {}
         dict_cat_area = {}
