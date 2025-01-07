@@ -69,22 +69,34 @@
 data
 |__train
     |__c1
+        |__*.png/*.jpg/*.bmp/*.tiff
     |__c2
+        |__*.png/*.jpg/*.bmp/*.tiff
     |__c3
+        |__*.png/*.jpg/*.bmp/*.tiff
     ...
     |__cn
+        |__*.png/*.jpg/*.bmp/*.tiff
 |__val
     |__c1
+        |__*.png/*.jpg/*.bmp/*.tiff
     |__c2
+        |__*.png/*.jpg/*.bmp/*.tiff
     |__c3
+        |__*.png/*.jpg/*.bmp/*.tiff
     ...
     |__cn
+        |__*.png/*.jpg/*.bmp/*.tiff
 |__test
     |__c1
+        |__*.png/*.jpg/*.bmp/*.tiff
     |__c2
+        |__*.png/*.jpg/*.bmp/*.tiff
     |__c3
+        |__*.png/*.jpg/*.bmp/*.tiff
     ...
     |__cn
+        |__*.png/*.jpg/*.bmp/*.tiff
 ```
 #### c* 表示类别文件夹，包含属于该类别的图像数据
 
@@ -104,17 +116,17 @@ data
 data
 |__train
     |__images
-        |__*.jpg/*.png/....
+        |__*.jpg/*.png/*.tiff/*.bmp/....
     |__labels
         |__*.txt
 |__val
     |__images
-        |__*.jpg/*.png/....
+        |__*.jpg/*.png/*.tiff/*.bmp/....
     |__labels
         |__*.txt
 |__test
     |__images
-        |__*.jpg/*.png/....
+        |__*.jpg/*.png/*.tiff/*.bmp/....
     |__labels
         |__*.txt
 ```
@@ -161,18 +173,18 @@ data
 data
 |__train
     |__images
-        |__*.jpg/*.png/....
+        |__*.jpg/*.png/*.tiff/*.bmp/....
     |__masks
-        |__*.jpg/*.png/....
+        |__*.jpg/*.png/*.tiff/*.bmp/....
 |__val
     |__images
-        |__*.jpg/*.png/....
+        |__*.jpg/*.png/*.tiff/*.bmp/....
     |__masks
-        |__*.jpg/*.png/....
+        |__*.jpg/*.png/*.tiff/*.bmp/....
 |__test
     |__images
-        |__*.jpg/*.png/....
+        |__*.jpg/*.png/*.tiff/*.bmp/....
     |__masks
-        |__*.jpg/*.png/....        
+        |__*.jpg/*.png/*.tiff/*.bmp/....        
 ```
 #### 其中，masks/XXX.jpg or XXX.png 为灰度图，像素值为该像素对应的类别索引
