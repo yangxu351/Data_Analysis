@@ -211,21 +211,21 @@ Dataset3
     |__images
         |__2011_003876.jpg/*.png/*.tiff/*.bmp
         |__....
-    |__labels
+    |__annotations
         |__2011_003876.json
         |__....
 |__val
     |__images
         |__2231_003876.jpg/*.png/*.tiff/*.bmp
         |__....
-    |__labels
+    |__annotations
         |__2231_003876.json
         |__....
 |__test
     |__images
         |__2561_003876.jpg/*.png/*.tiff/*.bmp
         |__....
-    |__labels
+    |__annotations
         |__2561_003876.json
         |__....
 ```
