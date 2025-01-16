@@ -133,7 +133,7 @@ Dataset_YOLO
         |__2561_003876.txt
         |__....
 ```
-#### 其中，标注文件*.txt 满足归一化后YOLO标注格式:ID,cw,ch,w,h,以‘,’间隔,例如[ID,center_x,center_y,width,height] 即 [2,0.4046,0.8406,0.5031,0.2437]
+#### 其中，标注文件*.txt 满足归一化后YOLO标注格式:ID cw ch w h,以空格间隔,例如[ID center_x center_y width height] 即 [2 0.4046 0.8406 0.5031 0.2437]
 
 
 ### VOC 目录树
