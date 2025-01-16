@@ -8,7 +8,7 @@ title_fontdict = {'family' : 'Microsoft YaHei', 'size': 16}
 fontdict={"family": "SimHei", "size": 14}
 
 
-def stat_msk(source_dir, img_suffix, msk_suffix, label_imgnum_thresh=20, split=None):
+def stat_msk(source_dir, label_imgnum_thresh=20, split=None):
     if split:
         valid_folders = [split]
     else:
@@ -20,21 +20,21 @@ def stat_msk(source_dir, img_suffix, msk_suffix, label_imgnum_thresh=20, split=N
         src_msk_dir = os.path.join(source_dir, sf, 'masks')    
         ori_imgs = os.listdir(src_img_dir)
         ori_imgs.sort()
-        ori_imgs_wo_suffix = [x.split('.')[0] for x in ori_imgs]
+        dict_img_suffix = {x.split('.')[0]:x.split('.')[-1] for x in ori_imgs}
         img_num = len(ori_imgs)
         ori_masks = os.listdir(src_msk_dir)
         ori_masks.sort()
-        ori_msks_wo_suffix = [x.split('.')[0] for x in ori_masks]
-        file_names = [x for x in ori_imgs_wo_suffix if x in ori_msks_wo_suffix]
+        dict_msk_suffix = {x.split('.')[0]:x.split('.')[-1] for x in ori_masks}
+        file_names = [x for x in dict_img_suffix.keys() if x in dict_msk_suffix.keys()]
         im_hw_list = []
         dict_cat_imgname = {}
         dict_cat_area = {}
         for ix, im_name in enumerate(file_names):
-            img = np.array(Image.open(os.path.join(src_img_dir, f'{im_name}{img_suffix}')))
+            img = np.array(Image.open(os.path.join(src_img_dir, f'{im_name}.{dict_img_suffix[im_name]}')))
             h, w, _ = img.shape
             im_hw_list.append((h,w))
             # print(os.path.join(src_msk_dir, ori_masks[ix]))
-            msk = np.array(Image.open(os.path.join(src_msk_dir, f'{im_name}{msk_suffix}')))
+            msk = np.array(Image.open(os.path.join(src_msk_dir, f'{im_name}.{dict_msk_suffix[im_name]}')))
             cat_ids = np.unique(msk)
             for cid in cat_ids:
                 cid = int(cid)

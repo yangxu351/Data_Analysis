@@ -19,7 +19,7 @@ def get_bbx_wh(lbl, w, h):
     # return arr_lbl[:,0].astype(np.int16), np.round(arr_lbl[:, 3:5], decimals=2)
     return np.array(list(zip(lbl.iloc[:, 0], np.round(arr_lbl[:, 3], decimals=2), np.round(arr_lbl[:, 4], decimals=2))))
 
-def stat_odt(source_dir, label_imgnum_thresh=20, img_suffix='.jpg', dst_lbl_suffix='.txt', split=None):
+def stat_odt(source_dir, label_imgnum_thresh=20, split=None):
     split_folders = os.listdir(source_dir)
     if split:
         valid_folders = [split]
@@ -33,23 +33,23 @@ def stat_odt(source_dir, label_imgnum_thresh=20, img_suffix='.jpg', dst_lbl_suff
             src_lbl_dir = os.path.join(source_dir, sf, 'labels')    
             ori_imgs = os.listdir(src_img_dir)
             ori_imgs.sort()
-            ori_imgs_wo_suffix = [x.split('.')[0] for x in ori_imgs]
+            dict_img_suffix = {x.split('.')[0]:x.split('.')[-1] for x in ori_imgs}
             img_num = len(ori_imgs)
             ori_lbls = os.listdir(src_lbl_dir)
             ori_lbls.sort()
-            ori_lbls_wo_suffix = [x.split('.')[0] for x in ori_lbls]
-            file_names = [x for x in ori_imgs_wo_suffix if x in ori_lbls_wo_suffix]
+            dict_lbl_suffix = {x.split('.')[0]:x.split('.')[-1] for x in ori_lbls}
+            file_names = [x for x in dict_img_suffix.keys() if x in dict_lbl_suffix.keys()]
             im_hw_list = []
             dict_cat_bbxhw = {}
             dict_cat_imgname = {}
             for ix, name in enumerate(file_names):
-                im_name = name + img_suffix
+                im_name = name + dict_img_suffix[name]
                 img = np.array(Image.open(os.path.join(src_img_dir, im_name)))
                 # print('ori shape',  img.shape) # h,w,c
                 h, w, _ = img.shape
                 im_hw_list.append((h,w))
                 # print('image name', im_name)
-                lbl_file = os.path.join(src_lbl_dir, f"{name}{dst_lbl_suffix}")
+                lbl_file = os.path.join(src_lbl_dir, f"{name}.{dict_lbl_suffix[name]}")
                 if not os.path.exists(lbl_file) or empty_lbl_check_by_file(lbl_file):
                     continue
                 lbl = pd.read_csv(lbl_file, header=None, delimiter=',')
