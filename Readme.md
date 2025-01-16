@@ -66,37 +66,31 @@
 
 ### 目录树
 ```
-data
+dataset
 |__train
-    |__c1
-        |__*.png/*.jpg/*.bmp/*.tiff
-    |__c2
-        |__*.png/*.jpg/*.bmp/*.tiff
-    |__c3
-        |__*.png/*.jpg/*.bmp/*.tiff
-    ...
-    |__cn
-        |__*.png/*.jpg/*.bmp/*.tiff
+    |__category01
+        |__2011_003876.png/*.jpg/*.bmp/*.tiff
+        |__2211_003324.png/*.jpg/*.bmp/*.tiff
+    |__category02
+        |__2211_003324.png/*.jpg/*.bmp/*.tiff
+        |__2321_324089.png/*.jpg/*.bmp/*.tiff
+    |__...
 |__val
-    |__c1
-        |__*.png/*.jpg/*.bmp/*.tiff
-    |__c2
-        |__*.png/*.jpg/*.bmp/*.tiff
-    |__c3
-        |__*.png/*.jpg/*.bmp/*.tiff
-    ...
-    |__cn
-        |__*.png/*.jpg/*.bmp/*.tiff
+    |__category01
+        |__2231_003876.png/*.jpg/*.bmp/*.tiff
+        |__2232_003324.png/*.jpg/*.bmp/*.tiff
+    |__category02
+        |__2234_003324.png/*.jpg/*.bmp/*.tiff
+        |__2235_324089.png/*.jpg/*.bmp/*.tiff
+    |__...
 |__test
-    |__c1
-        |__*.png/*.jpg/*.bmp/*.tiff
-    |__c2
-        |__*.png/*.jpg/*.bmp/*.tiff
-    |__c3
-        |__*.png/*.jpg/*.bmp/*.tiff
-    ...
-    |__cn
-        |__*.png/*.jpg/*.bmp/*.tiff
+    |__category01
+        |__3451_003876.png/*.jpg/*.bmp/*.tiff
+        |__3461_003324.png/*.jpg/*.bmp/*.tiff
+    |__category02
+        |__2543_003324.png/*.jpg/*.bmp/*.tiff
+        |__2890_324089.png/*.jpg/*.bmp/*.tiff
+    |__...
 ```
 #### c* 表示类别文件夹，包含属于该类别的图像数据
 
@@ -111,55 +105,177 @@ data
 ### 数据完整性
 1. 图像中不包含目标实例的个数，即数据元素完整性
 
+
+
 ### 目录树
+### YOLO 目录树
 ```
-data
+Dataset_YOLO
 |__train
     |__images
-        |__*.jpg/*.png/*.tiff/*.bmp/....
+        |__2011_003876.jpg/*.png/*.tiff/*.bmp
+        |__....
     |__labels
-        |__*.txt
+        |__2011_003876.txt
+        |__....
 |__val
     |__images
-        |__*.jpg/*.png/*.tiff/*.bmp/....
+        |__2231_003876.jpg/*.png/*.tiff/*.bmp
+        |__....
     |__labels
-        |__*.txt
+        |__2231_003876.txt
+        |__....
 |__test
     |__images
-        |__*.jpg/*.png/*.tiff/*.bmp/....
+        |__2561_003876.jpg/*.png/*.tiff/*.bmp
+        |__....
     |__labels
-        |__*.txt
+        |__2561_003876.txt
+        |__....
 ```
-#### 其中*.txt 满足归一化后YOLO标注格式: ID cw ch w h
-### VOC 数据格式
-- `VOC2007/`
-    - `Annotations/`
-        - `0d4c5e4f-fc3c-4d5a-906c-105.xml`
-        - `0ddfc5aea-fcdac-421-92dad-144.xml`
-        - `...`
-    - `ImageSets/`
-        - `Main/`
-            - `train.txt`
-            - `test.txt`
-            - `val.txt`
-            - `trainval.txt`
-    - `JPEGImages/`
-        - `0d4c5e4f-fc3c-4d5a-906c-105.jpg`
-        - `0ddfc5aea-fcdac-421-92dad-144.jpg`
-        - `...`
+#### 其中，标注文件*.txt 满足归一化后YOLO标注格式:ID,cw,ch,w,h,以‘,’间隔,例如[ID,center_x,center_y,width,height] 即 [2,0.4046,0.8406,0.5031,0.2437]
 
-### COCO 数据格式
-- `coco/`
-    - `annotations/`
-        - `instances_train2017.json`
-        - `instances_val2017.json`
-    - `images/`
-        - `train2017/`
-            - `0d4c5e4f-fc3c-4d5a-906c-105.jpg`
-            - `...`
-        - `val2017`
-            - `0ddfc5aea-fcdac-421-92dad-144.jpg`
-            - `...`
+
+### VOC 目录树
+```
+- Dataset_VOC
+    - Annotations
+        |__0d4c5e4f-105.xml
+        |__0ddfc5aea-144.xml
+        |__...
+    - ImageSets
+        |__Main
+            |__train.txt
+            |__test.txt
+            |__val.txt
+            |__trainval.txt
+    - JPEGImages
+        |__0d4c5e4f-105.jpg/*.png/*.tiff/*.bmp
+        |__0ddfc5aea-144.jpg/*.png/*.tiff/*.bmp
+        |__...
+```
+
+#### 其中，标注文件*.xml数据格式如下
+```
+<annotation>
+    <folder>Dataset_VOC</folder>
+    <filename>0d4c5e4f-105.jpg</filename>
+    <source>
+        <database>Unknown</database>
+        <annotation>Unknown</annotation>
+    </source>
+    <size>
+        <width>600</width>
+        <height>400</height>
+        <depth>3</depth>
+    </size>
+    <object>
+        <name>cat</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
+        <bndbox>
+            <xmin>120</xmin>
+            <ymin>100</ymin>
+            <xmax>200</xmax>
+            <ymax>200</ymax>
+        </bndbox>
+    </object>
+</annotation>
+```
+
+
+### COCO 目录树
+```
+- Dataset_COCO
+    - annotations
+        - instances_train.json
+        - instances_val.json
+        - instances_test.json (可选)
+    - images
+        - train
+            - 0d4c5e4f-fc3c-4d5a-906c-105.jpg
+            - ...
+        - val
+            - 0ddfc5aea-fcdac-421-92dad-144.jpg
+            - ...
+        - test (可选)
+            - 0hkkl5iop-fcdac-421-92fdl-453.jpg
+            - ...
+```
+
+### labelme 数据格式
+```
+Dataset3
+|__train
+    |__images
+        |__2011_003876.jpg/*.png/*.tiff/*.bmp
+        |__....
+    |__labels
+        |__2011_003876.json
+        |__....
+|__val
+    |__images
+        |__2231_003876.jpg/*.png/*.tiff/*.bmp
+        |__....
+    |__labels
+        |__2231_003876.json
+        |__....
+|__test
+    |__images
+        |__2561_003876.jpg/*.png/*.tiff/*.bmp
+        |__....
+    |__labels
+        |__2561_003876.json
+        |__....
+```
+
+#### 其中，标注文件*.json数据格式如下
+```
+{
+    "version": "4.5.6",
+    "flags": {},
+    "shapes": [
+        {
+            "label": "cat",
+            "points": [
+                [120.0, 100.0],
+                [200.0, 100.0],
+                [200.0, 200.0],
+                [120.0, 200.0]
+            ],
+            "group_id": null,
+            "shape_type": "rectangle",
+            "flags": {}
+        }
+    ],
+    "imagePath": "2231_003876.jpg",
+    "imageData": null,
+    "imageHeight": 400,
+    "imageWidth": 600
+}
+```
+
+
+### 目标检测数据说明  
+
+目标检测的数据比分类复杂，一张图像中，需要标记出各个目标区域的位置和类别。
+
+一般的目标区域位置用一个矩形框来表示，一般用以下3种方式表达：
+
+|         表达方式    |                 说明               |
+| :----------------: | :--------------------------------: |
+|     x1,y1,x2,y2    | (x1,y1)为左上角坐标，(x2,y2)为右下角坐标  |  
+|     x1,y1,w,h      | (x1,y1)为左上角坐标，w为目标区域宽度，h为目标区域高度  |
+|     xc,yc,w,h    | (xc,yc)为目标区域中心坐标，w为目标区域宽度，h为目标区域高度  |  
+
+
+ VOC采用的`[x1,y1,x2,y2]` 表示物体的bounding box
+
+ COCO采用的`[x1,y1,w,h]` 表示物体的bounding box
+
+ YOLO采用的`[xc,yc,w,h]`表示物体的bounding box
+
 
 ## 语义分割数据目录树（训练集、验证集、测试集）
 ### 类别多样性
@@ -173,18 +289,27 @@ data
 data
 |__train
     |__images
-        |__*.jpg/*.png/*.tiff/*.bmp/....
+        |__2011_003876.jpg/*.png/*.tiff/*.bmp
+        |__....
     |__masks
-        |__*.jpg/*.png/*.tiff/*.bmp/....
+        |__2011_003876.jpg/*.png/*.tiff/*.bmp
+        |__....
 |__val
     |__images
-        |__*.jpg/*.png/*.tiff/*.bmp/....
+        |__2121_003283.jpg/*.png/*.tiff/*.bmp
+        |__....
     |__masks
-        |__*.jpg/*.png/*.tiff/*.bmp/....
+        |__2121_003283.jpg/*.png/*.tiff/*.bmp
+        |__....
 |__test
     |__images
-        |__*.jpg/*.png/*.tiff/*.bmp/....
+        |__2151_003345.jpg/*.png/*.tiff/*.bmp
+        |__....
     |__masks
-        |__*.jpg/*.png/*.tiff/*.bmp/....        
+        |__2151_003345.jpg/*.png/*.tiff/*.bmp
+        |__....    
 ```
-#### 其中，masks文件夹下*.jpg or *.png or *.tiff or *.bmpg 为灰度图，像素值为该像素对应的类别索引
+#### 其中，masks文件夹下图像如果为灰度图像，像素值为该像素对应的类别索引
+#### 如果masks文件夹下图像如果为RGB图像，像素值为该像素对应的颜色值(R,G,B),取值范围均在[0,255]
+#### images文件夹下xyz.png 与masks文件夹下xyz.jpg 的名字要一致
+
