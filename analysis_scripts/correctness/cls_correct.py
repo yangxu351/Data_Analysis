@@ -1,12 +1,15 @@
 import os 
 from PIL import Image
 import numpy as np
+import logging
+logger = logging.getLogger(__name__)
 
 def outlier_unreadable_img_detection(base_dir, outlier_thresh, abnormal_condition=0):
     '''
         outlier detection
         unreadable detection
     '''
+    
     split_folders = os.listdir(base_dir)
     for sf in split_folders:
         if not os.path.isdir(os.path.join(base_dir, sf)):
@@ -24,12 +27,14 @@ def outlier_unreadable_img_detection(base_dir, outlier_thresh, abnormal_conditio
                     try:
                         img = np.array(Image.open(img_file))
                     except:
-                        print('not image')
+                        logging.warning(f'{img_file} is not readable!!')
                         img = None
                         not_img_list.append(img_file)
                         continue
                     # print(i_name, 'shape', img.shape) # h, w, c
-                    total_num = img.shape[0]*img.shape[1]*img.shape[2]
+                    total_num = 1.
+                    for i in range(len(img.shape)):
+                        total_num *= img.shape[i]
                     abnormal_ratio = np.count_nonzero(img==abnormal_condition)/(total_num*1.)
                     if abnormal_ratio >= outlier_thresh:
                         outlier_list.append(img_file) 
