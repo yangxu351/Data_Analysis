@@ -2,6 +2,8 @@ import os
 from PIL import Image
 import numpy as np
 import json 
+import logging
+logger = logging.getLogger(__name__)
 
 def outlier_unreadable_img_detection(base_dir, outlier_thresh, abnormal_condition=0, split=None):
     '''
@@ -24,24 +26,26 @@ def outlier_unreadable_img_detection(base_dir, outlier_thresh, abnormal_conditio
             try:
                 img = np.array(Image.open(img_file))
             except:
-                print('not image')
+                logging.warning(f'{img_file} is not readable!!')
                 img = None
-                not_img_list.append(i_name)
+                not_img_list.append(img_file)
                 continue
             # print(i_name, 'shape', img.shape) # h, w, c
-            total_num = img.shape[0]*img.shape[1]*img.shape[2]
+            total_num = 1.
+            for i in range(len(img.shape)):
+                total_num *= img.shape[i]
             abnormal_ratio = np.count_nonzero(img==abnormal_condition)/(total_num*1.)
             if abnormal_ratio >= outlier_thresh:
                 outlier_list.append(i_name) 
                 
         with open(os.path.join(base_dir, f'{sf}_not_readable_imgs.txt'), 'w') as f:
-            for name in not_img_list:
-                f.write("%s\n" % (name))
+            for img_f in not_img_list:
+                f.write("%s\n" % (img_f))
         f.close()
 
         with open(os.path.join(base_dir, f'{sf}_outlier_imgs.txt'), 'w') as f:
-            for name in outlier_list:
-                f.write("%s\n" % (name))
+            for img_f in outlier_list:
+                f.write("%s\n" % (img_f))
         f.close()
     
     
