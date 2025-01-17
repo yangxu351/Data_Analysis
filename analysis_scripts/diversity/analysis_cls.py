@@ -13,16 +13,16 @@ title_fontdict = {'family' : 'Microsoft YaHei', 'size': 16}
 fontdict = {"family": "SimHei", "size": 14}
 
 
-def caculate_brightness(image):
-    if image.mode == 'RGB':  # 彩色图像
+def caculate_brightness(img):
+    if img.mode == 'RGB':  # 彩色图像
         # 将图像转换为 numpy 数组并计算每个通道的平均亮度
-        np_image = np.array(image)
+        np_image = np.array(img)
         r = np_image[:, :, 0]
         g = np_image[:, :, 1]
         b = np_image[:, :, 2]
         avg_brightness = (np.mean(r) + np.mean(g) + np.mean(b)) / 3
-    elif image.mode == 'L':  # 灰度图像
-        np_image = np.array(image)
+    elif img.mode == 'L':  # 灰度图像
+        np_image = np.array(img)
         avg_brightness = np.mean(np_image)
     else:
         logger.error("Unsupported image mode!")
@@ -30,26 +30,13 @@ def caculate_brightness(image):
     return avg_brightness
 
 
-def calculate_image_color_stats(image):
-    image = image.convert('RGB')
+def calculate_image_contrast(img):
+    image = img.convert('L')  # 转换为灰度图像
     np_image = np.array(image)
-    mean_rgb = np.mean(np_image, axis=(0, 1))  # 计算整个图像的 RGB 通道均值
-    std_rgb = np.std(np_image, axis=(0, 1))    # 计算整个图像的 RGB 通道标准差
-    return mean_rgb, std_rgb
-
-
-def calculate_overall_color_volatility(image_paths):
-    all_mean_rgb = []
-    all_std_rgb = []
-    for path in image_paths:
-        mean_rgb, std_rgb = calculate_image_color_stats(path)
-        all_mean_rgb.append(mean_rgb)
-        all_std_rgb.append(std_rgb)
-    all_mean_rgb = np.array(all_mean_rgb)
-    all_std_rgb = np.array(all_std_rgb)
-    overall_mean_rgb = np.mean(all_mean_rgb, axis=0)  # 计算所有图像的 RGB 通道均值的均值
-    overall_std_rgb = np.mean(all_std_rgb, axis=0)  # 计算所有图像的 RGB 通道标准差的均值
-    return overall_mean_rgb, overall_std_rgb
+    min_val = np.min(np_image)
+    max_val = np.max(np_image)
+    contrast = (max_val - min_val) / (max_val + min_val)
+    return contrast
 
 
 def stat_cls(source_dir, label_imgnum_thresh=20, mapping_file=None):
@@ -69,8 +56,7 @@ def stat_cls(source_dir, label_imgnum_thresh=20, mapping_file=None):
         cat_folders.sort()
         
         brightness_avg_list = []
-        rgb_avg_list = []
-        rgb_std_list = []
+        contrast_list = []
 
         dict_cat_imgnum = {}
         dict_cat_imghw = {k:[] for k in dict_cat_id.keys()}
@@ -83,15 +69,14 @@ def stat_cls(source_dir, label_imgnum_thresh=20, mapping_file=None):
                 brightness = caculate_brightness(pil_img)
                 brightness_avg_list.append(brightness)
 
-                mean_rgb, std_rgb = calculate_image_color_stats(pil_img)
-                rgb_avg_list.append(mean_rgb)
-                rgb_std_list.append(std_rgb)
+                constrast = calculate_image_contrast(pil_img)
+                contrast_list.append(constrast)
 
                 img = np.array(pil_img)
                 dict_cat_imghw[cf].append(img.shape[:2]) # h,w
         
         brightness_std = np.std(brightness_avg_list)
-
+        contrast_std = np.std(contrast_list)
         # overall_mean_rgb = np.mean(np.array(all_mean_rgb), axis=0)  # 计算所有图像的 RGB 通道均值的均值
         # overall_std_rgb = np.mean(np.array(all_std_rgb), axis=0)  # 计算所有图像的 RGB 通道标准差的均值
 
@@ -99,8 +84,8 @@ def stat_cls(source_dir, label_imgnum_thresh=20, mapping_file=None):
         with open(os.path.join(source_dir, f'{sf}_allimg_volatility_brightness.json'), 'w') as f: # 亮度波动性
             json.dump(dict_brightness, f, indent=4)
 
-        dict_color = {'color_volatility_list': rgb_avg_list, 'color_volatility_std': rgb_std_list} 
-        with open(os.path.join(source_dir, f'{sf}_allimg_volatility_color.json'), 'w') as f: # 颜色波动性
+        dict_color = {'constrast_list': contrast_list, 'contrast_std':contrast_std} 
+        with open(os.path.join(source_dir, f'{sf}_allimg_volatility_contrast.json'), 'w') as f: # 对比度波动性
             json.dump(dict_color, f, indent=4)
 
         with open(os.path.join(source_dir, f'{sf}_cat_imgnum.json'), 'w') as f: #  类别样本数量分布
