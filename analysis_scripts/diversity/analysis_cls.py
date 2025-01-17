@@ -39,7 +39,7 @@ def calculate_image_contrast(img):
     return contrast
 
 
-def stat_cls(source_dir, label_imgnum_thresh=20, mapping_file=None):
+def stat_cls(source_dir, category_imgnum_thresh=20, mapping_file=None):
     split_folders = ['train', 'val', 'test']
     if mapping_file is None:
         logging.error('class mapping file is needed!')
@@ -77,16 +77,14 @@ def stat_cls(source_dir, label_imgnum_thresh=20, mapping_file=None):
         
         brightness_std = np.std(brightness_avg_list)
         contrast_std = np.std(contrast_list)
-        # overall_mean_rgb = np.mean(np.array(all_mean_rgb), axis=0)  # 计算所有图像的 RGB 通道均值的均值
-        # overall_std_rgb = np.mean(np.array(all_std_rgb), axis=0)  # 计算所有图像的 RGB 通道标准差的均值
 
         dict_brightness = {'brightness_list': brightness_avg_list, 'brightness_std': brightness_std} 
         with open(os.path.join(source_dir, f'{sf}_allimg_volatility_brightness.json'), 'w') as f: # 亮度波动性
-            json.dump(dict_brightness, f, indent=4)
+            json.dump(dict_brightness, f, indent=3)
 
         dict_color = {'constrast_list': contrast_list, 'contrast_std':contrast_std} 
         with open(os.path.join(source_dir, f'{sf}_allimg_volatility_contrast.json'), 'w') as f: # 对比度波动性
-            json.dump(dict_color, f, indent=4)
+            json.dump(dict_color, f, indent=3)
 
         with open(os.path.join(source_dir, f'{sf}_cat_imgnum.json'), 'w') as f: #  类别样本数量分布
             json.dump(dict_cat_imgnum, f, ensure_ascii=False, indent=3)
@@ -106,7 +104,7 @@ def stat_cls(source_dir, label_imgnum_thresh=20, mapping_file=None):
             json.dump(dict_rel_lbl_diver, f, ensure_ascii=False, indent=3)
         f.close() 
 
-        dict_lbl_size_diver = {k: 1 if v<label_imgnum_thresh else 0 for k,v in dict_cat_imgnum.items()}
+        dict_lbl_size_diver = {k: 1 if v<category_imgnum_thresh else 0 for k,v in dict_cat_imgnum.items()}
         lbl_size_diver = 1.*sum(dict_lbl_size_diver.values())/len(dict_lbl_size_diver.keys())
         with open(os.path.join(source_dir, f'{sf}_cat_num_diversity.txt'), 'w') as f: # 类别大小多样性
             f.write(f'{lbl_size_diver*100}%\n')
