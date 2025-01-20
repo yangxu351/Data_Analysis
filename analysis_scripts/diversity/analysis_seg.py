@@ -3,12 +3,16 @@ from PIL import Image
 import numpy as np
 import json 
 import matplotlib.pyplot as plt
+from analysis_scripts.diversity.img_ana import caculate_brightness, calculate_image_contrast
+import logging
+logger = logging.getLogger(__name__)
+
 plt.get_cmap('Set3')
 title_fontdict = {'family' : 'Microsoft YaHei', 'size': 16}
 fontdict={"family": "SimHei", "size": 14}
 
 
-def stat_msk(source_dir, label_imgnum_thresh=20, split=None):
+def stat_msk(source_dir, category_imgnum_thresh=20, split=None):
     if split:
         valid_folders = [split]
     else:
@@ -29,8 +33,22 @@ def stat_msk(source_dir, label_imgnum_thresh=20, split=None):
         im_hw_list = []
         dict_cat_imgname = {}
         dict_cat_area = {}
+
+        brightness_avg_list = []
+        contrast_list = []
+
         for ix, im_name in enumerate(file_names):
-            img = np.array(Image.open(os.path.join(src_img_dir, f'{im_name}.{dict_img_suffix[im_name]}')))
+            pil_img = Image.open(os.path.join(src_img_dir, f'{im_name}.{dict_img_suffix[im_name]}'))
+            try:
+                brightness = caculate_brightness(pil_img)
+            except Exception as e:
+                logger.error(f"Unsupported image mode: {str(e)}", exc_info=True)
+            brightness_avg_list.append(brightness)
+
+            constrast = calculate_image_contrast(pil_img)
+            contrast_list.append(constrast)
+
+            img = np.array(pil_img)
             h, w, _ = img.shape
             im_hw_list.append((h,w))
             # print(os.path.join(src_msk_dir, ori_masks[ix]))
@@ -45,7 +63,18 @@ def stat_msk(source_dir, label_imgnum_thresh=20, split=None):
                 else:
                     dict_cat_imgname[cid].append(im_name)
                     dict_cat_area[cid].append(msk_area)
-                
+
+        brightness_std = np.std(brightness_avg_list)
+        contrast_std = np.std(contrast_list)
+
+        dict_brightness = {'brightness_list': brightness_avg_list, 'brightness_std': brightness_std} 
+        with open(os.path.join(source_dir, f'{sf}_allimg_volatility_brightness.json'), 'w') as f: # 亮度波动性
+            json.dump(dict_brightness, f, indent=3)
+
+        dict_contrast = {'constrast_list': contrast_list, 'contrast_std':contrast_std} 
+        with open(os.path.join(source_dir, f'{sf}_allimg_volatility_contrast.json'), 'w') as f: # 对比度波动性
+            json.dump(dict_contrast, f, indent=3)
+                    
         arr_img_hw = np.ones((len(im_hw_list), 2), dtype=np.int32)
         for lx, (h, w) in enumerate(im_hw_list):
             arr_img_hw[lx, 0] = h
@@ -66,7 +95,7 @@ def stat_msk(source_dir, label_imgnum_thresh=20, split=None):
             json.dump(dict_rel_lbl_diver, f, ensure_ascii=False, indent=3)
         f.close() 
 
-        dict_lbl_size_diver = {k: 1 if len(v)<label_imgnum_thresh else 0 for k,v in dict_cat_imgname.items()}
+        dict_lbl_size_diver = {k: 1 if len(v)<category_imgnum_thresh else 0 for k,v in dict_cat_imgname.items()}
         lbl_size_diver = 1.*sum(dict_lbl_size_diver.values())/len(dict_lbl_size_diver.keys())
         with open(os.path.join(source_dir, f'{sf}_cat_size_diversity.txt'), 'w') as f: # 类别大小多样性
             f.write(f'{lbl_size_diver*100}%\n')
