@@ -81,13 +81,13 @@ def empty_unreadable_check_msk_png(base_dir, split=None):
                 empty_files.append(msk_name)
 
         with open(os.path.join(base_dir, f'{sf}_empty_masks.txt'), 'w') as f:
-            for msk_f in empty_files:
-                f.write("%s\n" % msk_f)
+            for msk_n in empty_files:
+                f.write("%s\n" % msk_n)
         f.close()
 
         with open(os.path.join(base_dir, f'{sf}_unreadable_masks.txt'), 'w') as f:
-            for msk_f in unreadble_files:
-                f.write("%s\n" % msk_f)
+            for msk_n in unreadble_files:
+                f.write("%s\n" % msk_n)
         f.close()
 
 
