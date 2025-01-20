@@ -1,10 +1,10 @@
 import os
 import shutil 
-import glob 
 import numpy as np
 import json
-import cv2 
 from PIL import Image
+import logging
+logger = logging.getLogger(__name__)
 
 # https://github.com/yangxu351/xview-Faster-RCNN-with-torchvision/blob/master/data_preprocess/coco_utils.py
 
@@ -45,9 +45,9 @@ def convert_coco_to_png(base_dir, src_split='val2017', split='val'):
         # FIXME: check duplicate?
         img_id = img_info['id']
         if img_id in dict_img_id_name.keys():
-            print(f'label info of image {img_id} is duplicate!')
+            logger.warning(f'label info of image {img_id} is duplicate!')
             duplicate_imginfo_list.append(img_id)
-            continue # duplicate is ignored
+            continue 
 
         dict_img_id_wh[img_id] = (img_info['width'], img_info['height'])
         dict_img_id_name[img_id] = img_info['file_name']
@@ -71,7 +71,7 @@ def convert_coco_to_png(base_dir, src_split='val2017', split='val'):
         cat_name = cat_info['name']
         # FIXME: check duplicate?
         if cat_id in dict_cat_id_name.keys():
-            print(f'label info of category {cat_id} is duplicate!')
+            logger.warning(f'label info of category {cat_id} is duplicate!')
             duplicate_catinfo_list.append(cat_id)
             continue # duplicate is ignored
 
@@ -143,7 +143,7 @@ def convert_coco_to_png(base_dir, src_split='val2017', split='val'):
         if iname not in img_list:
             continue
         img_w, img_h = dict_img_id_wh[img_id]
-        mask = np.zeros((img_h, img_w), dtype=np.int32)
+        mask = np.zeros((img_h, img_w), dtype=np.uint8)
         rle_msk = None
         for cid, iscrowd, segs in cid_crowd_segs:
             if iscrowd: # 1 RLE
@@ -168,13 +168,16 @@ def convert_coco_to_png(base_dir, src_split='val2017', split='val'):
                         else:
                             dict_invalide_id_segs[ann_id].append(seg)
                         continue
-                    pts = np.array([[x, y] for x, y in zip(xs, ys)], dtype=np.int32)
-                    pts = pts.reshape((-1, 1, 2))
-                    # draw the points on the mask image
-                    mask = cv2.fillPoly(mask, [pts], cid)
+                    # pts = np.array([[x, y] for x, y in zip(xs, ys)], dtype=np.int32)
+                    # pts = pts.reshape((-1, 1, 2))
+                    # # draw the points on the mask image
+                    # mask = cv2.fillPoly(mask, [pts], cid)
+                    for x,y in zip(xs,ys):
+                        mask[x,y] = cid
                 if not rle_msk is None:
                     mask[rle_msk!=0] = rle_msk[rle_msk!=0]
-        cv2.imwrite(os.path.join(mask_dir, iname), mask)
+        # cv2.imwrite(os.path.join(mask_dir, iname), mask)
+        Image.fromarray(mask, mode='P').save(os.path.join(mask_dir, iname))
     
     with open(os.path.join(base_dir, f'{split}_invalid_annid_segs.json'), 'w') as f: # dict of invalid ann_id:segs
         json.dump(dict_invalide_id_segs, f, ensure_ascii=False, indent=3)
