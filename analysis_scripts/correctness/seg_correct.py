@@ -72,7 +72,7 @@ def empty_unreadable_check_msk_png(base_dir, split=None):
             try:
                 img = np.array(Image.open(msk_file))
             except:
-                print('not image')
+                logger.warning(f'{msk_file} is not readable!!')
                 img = None
                 unreadble_files.append(msk_name)
                 continue
@@ -81,13 +81,13 @@ def empty_unreadable_check_msk_png(base_dir, split=None):
                 empty_files.append(msk_name)
 
         with open(os.path.join(base_dir, f'{sf}_empty_masks.txt'), 'w') as f:
-            for name in empty_files:
-                f.write("%s\n" % name)
+            for msk_f in empty_files:
+                f.write("%s\n" % msk_f)
         f.close()
 
         with open(os.path.join(base_dir, f'{sf}_unreadable_masks.txt'), 'w') as f:
-            for name in unreadble_files:
-                f.write("%s\n" % name)
+            for msk_f in unreadble_files:
+                f.write("%s\n" % msk_f)
         f.close()
 
 
@@ -109,7 +109,7 @@ def check_msk_id(base_dir, num_cls, split=None):
             # if img[img<0]
             # if img.min()<0 or img.max()>=num_cls:
             #     invalid_msk_id_files.append(msk_name)
-            outlier_values = np.unique(img[(img < 0) | (img > num_cls)])
+            outlier_values = np.unique(img[(img < 0) | (img >= num_cls)])
             if outlier_values.shape[0]:
                 dict_invalid_msk_cid[msk_name] = outlier_values.tolist()
                     
