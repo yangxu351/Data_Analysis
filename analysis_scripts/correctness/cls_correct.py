@@ -1,15 +1,22 @@
 import os 
+import sys 
 from PIL import Image
 import numpy as np
+import json
 import logging
 logger = logging.getLogger(__name__)
 
-def outlier_unreadable_img_detection(base_dir, outlier_thresh, abnormal_condition=0):
+def outlier_unreadable_img_detection(base_dir, outlier_thresh, mapping_file=None, abnormal_condition=0):
     '''
         outlier detection
         unreadable detection
     '''
-    
+    if mapping_file is None:
+        logging.error('class mapping file is needed!')
+        sys.exit(1)
+    dict_id_cat = json.load(open(mapping_file))
+    ori_cats = list(dict_id_cat.values())
+
     split_folders = os.listdir(base_dir)
     for sf in split_folders:
         if not os.path.isdir(os.path.join(base_dir, sf)):
@@ -17,10 +24,14 @@ def outlier_unreadable_img_detection(base_dir, outlier_thresh, abnormal_conditio
         if split in ['train', 'val', 'test']:
             img_dir = os.path.join(base_dir, split)
             cat_list = os.listdir(img_dir)
-
+            abnormal_cat_list = []
             outlier_list = []
             not_img_list = []
             for cat in cat_list:
+                if cat not in ori_cats:
+                    logger.warning(f'{cat} not in category list!')
+                    abnormal_cat_list.append(cat)
+
                 file_list = os.listdir(os.path.join(img_dir, cat))
                 for img_name in file_list:
                     img_file = os.path.join(img_dir, cat, img_name)
@@ -39,6 +50,11 @@ def outlier_unreadable_img_detection(base_dir, outlier_thresh, abnormal_conditio
                     if abnormal_ratio >= outlier_thresh:
                         outlier_list.append(img_file) 
             
+            with open(os.path.join(base_dir, f'{split}_unrecognized_categories.txt'), 'w') as f:
+                for name in abnormal_cat_list:
+                    f.write("%s\n" % (name))
+            f.close()
+
             with open(os.path.join(base_dir, f'{split}_not_readable_imgs.txt'), 'w') as f:
                 for name in not_img_list:
                     f.write("%s\n" % (name))
