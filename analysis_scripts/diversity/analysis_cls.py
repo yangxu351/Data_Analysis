@@ -82,9 +82,9 @@ def stat_cls(source_dir, category_imgnum_thresh=20, mapping_file=None):
         with open(os.path.join(source_dir, f'{sf}_allimg_volatility_brightness.json'), 'w') as f: # 亮度波动性
             json.dump(dict_brightness, f, indent=3)
 
-        dict_color = {'constrast_list': contrast_list, 'contrast_std':contrast_std} 
+        dict_contrast = {'constrast_list': contrast_list, 'contrast_std':contrast_std} 
         with open(os.path.join(source_dir, f'{sf}_allimg_volatility_contrast.json'), 'w') as f: # 对比度波动性
-            json.dump(dict_color, f, indent=3)
+            json.dump(dict_contrast, f, indent=3)
 
         with open(os.path.join(source_dir, f'{sf}_cat_imgnum.json'), 'w') as f: #  类别样本数量分布
             json.dump(dict_cat_imgnum, f, ensure_ascii=False, indent=3)
