@@ -4,6 +4,7 @@ from PIL import Image
 import numpy as np
 import json 
 import matplotlib.pyplot as plt
+from analysis_scripts.diversity.img_ana import caculate_brightness, calculate_image_contrast
 import logging
 logger = logging.getLogger(__name__)
 
@@ -11,32 +12,6 @@ logger = logging.getLogger(__name__)
 plt.get_cmap('Set3')
 title_fontdict = {'family' : 'Microsoft YaHei', 'size': 16}
 fontdict = {"family": "SimHei", "size": 14}
-
-
-def caculate_brightness(img):
-    if img.mode == 'RGB':  # 彩色图像
-        # 将图像转换为 numpy 数组并计算每个通道的平均亮度
-        np_image = np.array(img)
-        r = np_image[:, :, 0]
-        g = np_image[:, :, 1]
-        b = np_image[:, :, 2]
-        avg_brightness = (np.mean(r) + np.mean(g) + np.mean(b)) / 3
-    elif img.mode == 'L':  # 灰度图像
-        np_image = np.array(img)
-        avg_brightness = np.mean(np_image)
-    else:
-        logger.error("Unsupported image mode!")
-        sys.exit(1)
-    return avg_brightness
-
-
-def calculate_image_contrast(img):
-    image = img.convert('L')  # 转换为灰度图像
-    np_image = np.array(image)
-    min_val = np.min(np_image)
-    max_val = np.max(np_image)
-    contrast = (max_val - min_val) / (max_val + min_val)
-    return contrast
 
 
 def stat_cls(source_dir, category_imgnum_thresh=20, mapping_file=None):
@@ -66,7 +41,10 @@ def stat_cls(source_dir, category_imgnum_thresh=20, mapping_file=None):
             dict_cat_imgnum[cf] = len(ori_imgs)
             for name in ori_imgs:
                 pil_img = Image.open(os.path.join(source_dir, sf, cf, name))
-                brightness = caculate_brightness(pil_img)
+                try:
+                    brightness = caculate_brightness(pil_img)
+                except Exception as e:
+                    logger.error(f"Unsupported image mode: {str(e)}", exc_info=True)
                 brightness_avg_list.append(brightness)
 
                 constrast = calculate_image_contrast(pil_img)
