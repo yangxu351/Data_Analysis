@@ -5,6 +5,9 @@ import pandas as pd
 import numpy as np
 import json 
 import xml.etree.ElementTree as ET
+import logging
+logger = logging.getLogger(__name__)
+
 
 def make_folder_if_not(dst_dir, rm_exist=True):
     if not os.path.exists(dst_dir):
@@ -15,7 +18,7 @@ def make_folder_if_not(dst_dir, rm_exist=True):
             os.mkdir(dst_dir)
 
 
-def covert_voc_to_yolo(base_dir):
+def covert_voc_to_yolo(base_dirm, extention='.xml'):
     ''' 
         convert VOC to YOLO 
         empty labels
@@ -25,20 +28,33 @@ def covert_voc_to_yolo(base_dir):
     txt_dir = os.path.join(base_dir, 'labelsAll') 
     make_folder_if_not(txt_dir)
 
-    xml_files = glob.glob(os.path.join(xml_dir, '*.xml'))
+    # xml_files = glob.glob(os.path.join(xml_dir, '*.xml'))
+    xml_files = os.listdir(xml_dir)
+    
     dict_cats = {}
     index = 0
     dict_duplicate_file_box = {}
     empty_lbls = []
     dict_invalid_bbx_xmls = {}
-    
-    for xf in xml_files:
-        file_name = os.path.basename(xf)
+    attribute_lost_xmls = []
+    suffix_error_files = []
+    for file_name in xml_files:
+        if not file_name.endswith(extention):
+            suffix_error_files.append(file_name)
+            continue
+        xf = os.path.join(xml_dir, file_name)
         ann_tree = ET.parse(xf)
         ann_root = ann_tree.getroot()
-        size = ann_root.find('size')
-        img_width = int(size.findtext('width'))
-        img_height = int(size.findtext('height'))
+        try:
+            size = ann_root.find('size')
+            img_width = int(size.findtext('width'))
+            img_height = int(size.findtext('height'))
+        except Exception as e:
+            # logger.error('key attributes of size, widht, height are lost')
+            logger.error(str(e), exc_info=True)
+            attribute_lost_xmls.append(file_name)
+            continue
+            
         objects = ann_root.findall('object')
         lbl_list = []
         oribox_list = []
@@ -68,7 +84,7 @@ def covert_voc_to_yolo(base_dir):
             ymax = float(symax) if symax else None
            
             # check invlid coordinates
-            if xmin is None or ymin is None or xmax is None or ymax is None: # FIXME: None is reaplaced by -10000
+            if xmin is None or ymin is None or xmax is None or ymax is None: # FIXME: None 
                 if file_name not in dict_invalid_bbx_xmls.keys():
                     dict_invalid_bbx_xmls[file_name]= [[cat,xmin, ymin, xmax, ymax]]
                 else:
@@ -104,23 +120,34 @@ def covert_voc_to_yolo(base_dir):
         lbl_file = os.path.join(txt_dir, os.path.basename(xf).replace('.xml', '.txt'))
         with open(lbl_file, 'w') as f:
             for cat_id, cx,cy,w,h in lbl_list:
-                f.write("%d,%.4f,%.4f,%.4f,%.4f\n" % (cat_id, cx, cy, w, h))
+                f.write("%d %.4f %.4f %.4f %.4f\n" % (cat_id, cx, cy, w, h))
         f.close() 
 
-        file_invalid_xml = os.path.join(base_dir, 'all_files_invalid_coords.json')
-        with open(file_invalid_xml, 'w') as f:
-            json.dump(dict_invalid_bbx_xmls, f, ensure_ascii=False, indent=3)
-        f.close()   
+    file_invalid_xml = os.path.join(base_dir, 'all_files_invalid_coords.json')
+    with open(file_invalid_xml, 'w') as f:
+        json.dump(dict_invalid_bbx_xmls, f, ensure_ascii=False, indent=3)
+    f.close()   
 
-        file_empty = os.path.join(base_dir, 'all_files_without_lbls.txt')
-        with open(file_empty, 'w') as f:
-            for name in empty_lbls:
-                f.write("%s\n" % name)
-        f.close()  
+    file_empty = os.path.join(base_dir, 'all_files_empty_lbls.txt')
+    with open(file_empty, 'w') as f:
+        for name in empty_lbls:
+            f.write("%s\n" % name)
+    f.close()  
+    
+    with open(os.path.join(base_dir, 'all_xmls_lost_key_attributes.txt'), 'w') as f: 
+        for name in attribute_lost_xmls:
+            f.write("%s\n" % name)
+    f.close() 
 
-        with open(os.path.join(base_dir, 'all_duplicate_file_bbox.json'), 'w') as f: # dict of file_name:[bbox]
-            json.dump(dict_duplicate_file_box, f, ensure_ascii=False, indent=3)
-        f.close() 
+    
+    with open(os.path.join(base_dir, 'all_xmls_extention_error_files.txt'), 'w') as f: 
+        for name in suffix_error_files:
+            f.write("%s\n" % name)
+    f.close() 
+
+    with open(os.path.join(base_dir, 'all_xmls_duplicate_bbox.json'), 'w') as f: # dict of file_name:[bbox]
+        json.dump(dict_duplicate_file_box, f, ensure_ascii=False, indent=3)
+    f.close() 
 
 def movefiles_by_setfile(base_dir, split='train'):
     '''
