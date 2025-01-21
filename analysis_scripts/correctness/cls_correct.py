@@ -46,7 +46,7 @@ def outlier_unreadable_img_detection(base_dir, outlier_thresh, mapping_file=None
                     total_num = 1.
                     for i in range(len(img.shape)):
                         total_num *= img.shape[i]
-                    abnormal_ratio = np.count_nonzero(img==abnormal_condition)/(total_num*1.)
+                    abnormal_ratio = np.count_nonzero(img==abnormal_condition)/total_num
                     if abnormal_ratio >= outlier_thresh:
                         outlier_list.append(img_file) 
             
