@@ -18,7 +18,7 @@ def make_folder_if_not(dst_dir, rm_exist=True):
             os.mkdir(dst_dir)
 
 
-def covert_voc_to_yolo(base_dirm, extention='.xml'):
+def covert_voc_to_yolo(base_dir, dict_stat, wh_thres=50, extention='.xml'):
     ''' 
         convert VOC to YOLO 
         empty labels
@@ -49,9 +49,9 @@ def covert_voc_to_yolo(base_dirm, extention='.xml'):
             size = ann_root.find('size')
             img_width = int(size.findtext('width'))
             img_height = int(size.findtext('height'))
-        except Exception as e:
-            # logger.error('key attributes of size, widht, height are lost')
-            logger.error(str(e), exc_info=True)
+        except:
+            logger.error('key attributes of size, width, height lost')
+            # logger.error(str(e), exc_info=True)
             attribute_lost_xmls.append(file_name)
             continue
             
@@ -91,15 +91,17 @@ def covert_voc_to_yolo(base_dirm, extention='.xml'):
                     dict_invalid_bbx_xmls[file_name].append([cat,xmin, ymin, xmax, ymax])
                 continue
             
+            box = [xmin, ymin, xmax, ymax]
+            width = xmax - xmin 
+            height = ymax - ymin
             # check invlid coordinates
-            if xmin < 0 or ymin < 0 or xmax >img_width or ymax >img_height:
+            if xmin < 0 or ymin < 0 or xmax >img_width or ymax >img_height or width<=0 or height<=0 or (max(width/height, height/width) > wh_thres):
                 if file_name not in dict_invalid_bbx_xmls.keys():
                     dict_invalid_bbx_xmls[file_name]= [[cat,xmin, ymin, xmax, ymax]]
                 else:
                     dict_invalid_bbx_xmls[file_name].append([cat,xmin, ymin, xmax, ymax])
                 continue
-
-            box = [xmin, ymin, xmax, ymax]
+           
             # check duplicate
             if box not in oribox_list:
                 oribox_list.append(box)
@@ -108,16 +110,14 @@ def covert_voc_to_yolo(base_dirm, extention='.xml'):
                     dict_duplicate_file_box[file_name] = np.array(box, dtype=np.int32).tolist()
                 else:
                     dict_duplicate_file_box[file_name].append(np.array(box, dtype=np.int32).tolist())
-            
-            width = xmax - xmin 
-            height = ymax - ymin 
+
             center_wid = xmin+width/2.
             center_hei = ymin+height/2.
             lbl_list.append([dict_cats[cat], center_wid/img_width, center_hei/img_height, width/img_width, height/img_height])
         
         # print('index', index)
         
-        lbl_file = os.path.join(txt_dir, os.path.basename(xf).replace('.xml', '.txt'))
+        lbl_file = os.path.join(txt_dir, os.path.basename(xf).replace(extention, '.txt'))
         with open(lbl_file, 'w') as f:
             for cat_id, cx,cy,w,h in lbl_list:
                 f.write("%d %.4f %.4f %.4f %.4f\n" % (cat_id, cx, cy, w, h))
@@ -127,27 +127,31 @@ def covert_voc_to_yolo(base_dirm, extention='.xml'):
     with open(file_invalid_xml, 'w') as f:
         json.dump(dict_invalid_bbx_xmls, f, ensure_ascii=False, indent=3)
     f.close()   
+    dict_stat['标注不合理比例'] = f'{round(len(dict_invalid_bbx_xmls.keys())/len(xml_files),4)*100}%'
 
     file_empty = os.path.join(base_dir, 'all_files_empty_lbls.txt')
     with open(file_empty, 'w') as f:
         for name in empty_lbls:
             f.write("%s\n" % name)
-    f.close()  
-    
+    f.close() 
+    dict_stat['空标注比例'] = f'{round(len(empty_lbls)/len(xml_files),4)*100}%'
+ 
     with open(os.path.join(base_dir, 'all_xmls_lost_key_attributes.txt'), 'w') as f: 
         for name in attribute_lost_xmls:
             f.write("%s\n" % name)
     f.close() 
-
+    dict_stat['标注关键字段缺失率'] = f'{round(len(attribute_lost_xmls)/len(xml_files),4)*100}%'
     
     with open(os.path.join(base_dir, 'all_xmls_extention_error_files.txt'), 'w') as f: 
         for name in suffix_error_files:
             f.write("%s\n" % name)
     f.close() 
+    dict_stat['标注文件格式不一致比例'] = f'{round(len(suffix_error_files)/len(xml_files),4)*100}%'
 
     with open(os.path.join(base_dir, 'all_xmls_duplicate_bbox.json'), 'w') as f: # dict of file_name:[bbox]
         json.dump(dict_duplicate_file_box, f, ensure_ascii=False, indent=3)
     f.close() 
+    dict_stat['标注重复比例'] = f'{round(len(suffix_error_files)/len(xml_files),4)*100}%'
 
 def movefiles_by_setfile(base_dir, split='train'):
     '''
