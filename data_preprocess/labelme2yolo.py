@@ -56,7 +56,7 @@ def convert_labelme_to_yolo(labelme_json_path, output_dir):
 
 
 
-def covert_labelme_to_yolo(base_dir, mapping_file='', extention='.json'):
+def covert_labelme_to_yolo(base_dir, dict_stat, wh_thres=50, mapping_file='', extention='.json'):
     ''' 
         convert labelme to YOLO 
         empty labels
@@ -124,8 +124,10 @@ def covert_labelme_to_yolo(base_dir, mapping_file='', extention='.json'):
             x_max = max([point[0] for point in points])
             y_max = max([point[1] for point in points])
 
+            width = x_max - x_min
+            height = y_max - y_min
             # check invlid coordinates
-            if x_min < 0 or y_min < 0 or x_max >image_width or y_max >image_height:
+            if x_min < 0 or y_min < 0 or x_max >image_width or y_max >image_height or width<=0 or height<=0 or (max(width/height, height/width) > wh_thres):
                 if file_name not in dict_invalid_bbx_jsons.keys():
                     dict_invalid_bbx_jsons[file_name]= [[class_id, x_min, y_min, x_max, y_max]]
                 else:
@@ -158,28 +160,33 @@ def covert_labelme_to_yolo(base_dir, mapping_file='', extention='.json'):
     with open(error_ext_file, 'w') as f:
         for name in suffix_error_files:
             f.write("%s\n" % name)
-    f.close()  
+    f.close()
+    dict_stat['标注文件格式不一致比例'] = f'{round(len(suffix_error_files)/len(json_files),4)*100}%'   # 标注文件格式不一致比例
 
     attribute_lost_file = os.path.join(base_dir, 'all_jsons_lost_key_attributes.txt')
     with open(attribute_lost_file, 'w') as f:
         for name in attribute_lost_jsons:
             f.write("%s\n" % name)
     f.close()  
+    dict_stat['标注关键字段缺失率'] = f'{round(len(attribute_lost_jsons)/len(json_files),4)*100}%'   # 标注关键字段缺失率
 
     file_invalid_xml = os.path.join(base_dir, 'all_jsons_invalid_coords.json')
     with open(file_invalid_xml, 'w') as f:
         json.dump(dict_invalid_bbx_jsons, f, ensure_ascii=False, indent=3)
     f.close()   
+    dict_stat['标注不合理比例'] = f'{round(len(dict_invalid_bbx_jsons.keys())/len(json_files),4)*100}%' # 标注不合理比例
 
     file_empty = os.path.join(base_dir, 'all_jsons_without_lbls.txt')
     with open(file_empty, 'w') as f:
         for name in empty_lbls:
             f.write("%s\n" % name)
-    f.close()  
+    f.close()   
+    dict_stat['空标注比例'] = f'{round(len(empty_lbls)/len(json_files),4)*100}%'  # 空标注比例
 
     with open(os.path.join(base_dir, 'all_jsons_duplicate_bbox.json'), 'w') as f: # dict of file_name:[bbox]
         json.dump(dict_duplicate_file_box, f, ensure_ascii=False, indent=3)
     f.close() 
+    dict_stat['标注重复比例'] = f'{round(len(dict_duplicate_file_box.keys())/len(json_files),4)*100}%'  # 空标注比例
 
 def movefiles_by_setfile(base_dir, split='train'):
     '''
