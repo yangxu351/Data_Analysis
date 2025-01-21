@@ -1,7 +1,9 @@
 import os
+import sys
 import shutil 
 import json
-import numpy as np
+import logging
+logger = logging.getLogger(__name__)
 
 
 def make_folder_if_not(dst_dir, rm_exist=True):
@@ -21,23 +23,41 @@ def convert_coco_to_yolo(base_dir, src_split='val2017', split='val'):
     find duplicate annoation
     '''
     js_file = os.path.join(base_dir, 'annotations', f'instances_{src_split}.json')
-    js = json.load(open(js_file))
-    img_list = js['images']
+    try:
+        js = json.load(open(js_file))
+        img_list = js['images']
+    except Exception as e:
+         logger.error(f"{str(e)}", exc_info=True)
+         sys.exit(1)
+         
     dict_img_wh = {}
     dict_img_id_name = {}
     
     duplicate_imginfo_list = []
+    attribute_lost_imgid_list = []
+    
     for img_info in img_list:
         img_id = img_info['id']
         # FIXME: check duplicate?
         if img_id in dict_img_id_name.keys():
-            print(f'label info of image {img_id} is duplicate!')
+            logger.warning(f'label info of image {img_id} is duplicate!')
             duplicate_imginfo_list.append(img_id)
             continue # duplicate is ignored
+
+        if 'file_name' not in img_info.keys() or 'width' not in img_info.keys() or 'height' not in img_info.keys():
+            logger.error('key attributes of images are not found') 
+            attribute_lost_imgid_list.append(img_id)
+            continue
         dict_img_id_name[img_id] = img_info['file_name']
         dict_img_wh[img_id] = (img_info['width'], img_info['height'])
-    
-    dumplicat_imginfo_file = os.path.join(base_dir, split, 'duplicate_imginfo.txt')
+            
+    attribute_lost_img_file = os.path.join(base_dir, split, 'attribute_lost_imgid.txt') # 关键字段缺失
+    with open(attribute_lost_img_file, 'w') as f:
+        for imgid in attribute_lost_imgid_list:
+            f.write("%d\n" % (imgid))
+    f.close()
+
+    dumplicat_imginfo_file = os.path.join(base_dir, split, 'duplicate_imginfo.txt') # ID重复
     with open(dumplicat_imginfo_file, 'w') as f:
         for imgid in duplicate_imginfo_list:
             f.write("%d\n" % (imgid))
@@ -56,18 +76,19 @@ def convert_coco_to_yolo(base_dir, src_split='val2017', split='val'):
         cat_name = cat_info['name']
         # FIXME: check duplicate?
         if cat_id in dict_cat_id_name.keys():
-            print(f'label info of category {cat_id} is duplicate!')
+            logger.warning(f'label info of category {cat_id} is duplicate!')
             duplicate_catinfo_list.append(cat_info)
             continue # duplicate is ignored
 
         dict_cat_id_name[cat_id] = cat_name
-        super_cat = cat_info['supercategory']
-        if super_cat not in dict_cats_super_children.keys():
-            dict_cats_super_children[super_cat] = [cat_name]
-        else:
-            dict_cats_super_children[super_cat].append(cat_name)
+        if 'supercategory' in cat_info.keys():
+            super_cat = cat_info['supercategory']
+            if super_cat not in dict_cats_super_children.keys():
+                dict_cats_super_children[super_cat] = [cat_name]
+            else:
+                dict_cats_super_children[super_cat].append(cat_name)
 
-    dumplicat_catinfo_file = os.path.join(base_dir, f'{split}_duplicate_catinfo.txt')
+    dumplicat_catinfo_file = os.path.join(base_dir, f'{split}_duplicate_catinfo.txt') # 父类别重复
     with open(dumplicat_catinfo_file, 'w') as f:
         for catinfo in duplicate_catinfo_list:
             f.write("%s\n" % (catinfo))
@@ -136,9 +157,9 @@ def convert_coco_to_yolo(base_dir, src_split='val2017', split='val'):
         for ix, (imgid, annid, box) in enumerate(duplicate_imgid_annid_bbox):
             if ix==0:
                 f.write("%s,%s,%s,%s,%s,%s\n" % ("image_id", "ann_id", "bbx_tlx", "bbx_tly", "bbx_w", "bbx_h"))
-                f.write("%d,%d,%.2f,%.2f,%.2f,%.2f\n" % (imgid, annid, box[0], box[1], box[2], box[3]))
+                f.write("%d,%d,%.4f,%.4f,%.4f,%.4f\n" % (imgid, annid, box[0], box[1], box[2], box[3]))
             else:
-                f.write("%d,%d,%.2f,%.2f,%.2f,%.2f\n" % (imgid, annid, box[0], box[1], box[2], box[3]))
+                f.write("%d,%d,%.4f,%.4f,%.4f,%.4f\n" % (imgid, annid, box[0], box[1], box[2], box[3]))
     f.close()
 
     dst_lbl_dir = os.path.join(base_dir, split, 'labels')
