@@ -99,38 +99,42 @@
 ### 语义分割 :sunrise:
 
 ### 完整性
-1. 图像或者标注文件是否被破坏，是否可读，文件损坏 ***率*** :performing_arts: :sunrise:
-2. 标注文件字段完整性，是否有字段缺失、重复等  :dart: 
+1. 图像是否被破坏，是否可读，文件损坏 ***率*** :performing_arts: :sunrise: :dart:(`统一yolo`)
+2. 标注文件字段完整性，是否有标注关键字段缺失等  :dart: (`coco` `voc`  `labelme` `yolo`)
+3. 标注文件是否被破坏，是否可读，文件损坏 ***率*** :performing_arts: :sunrise: :dart:( `voc` `labelme` `yolo`)
 
 ### 数据集量级
-3. 图像数量级，图像数量是否达到指定阈值，是否能够支撑训练或测试 :performing_arts: :sunrise:
-4. 类别样本数量达标 ***率***,即类别样本数量大于阈值则该类别的样本数量达标  :performing_arts: :sunrise:
+4. 图像数量级，图像数量是否达到指定阈值，是否能够支撑训练或测试 :performing_arts: :sunrise: :dart:(`统一yolo`)
+5. 类别样本数量达标 ***率***,即类别样本数量大于阈值则该类别的样本数量达标  :performing_arts: :sunrise: :dart:(`统一yolo`)
 
 ### 数据类别多样性
-5. 类别分布均衡性 :performing_arts: :sunrise:
-6. 相对类别多样性  :performing_arts: :sunrise:
-7. 图像尺寸分布 :performing_arts: 
-8. 类别目标尺寸分布（大、中、小）,语义分割类别面积分布 :sunrise:
+6. 类别分布均衡性 :performing_arts: :sunrise: :dart:(`统一yolo`)
+7. 相对类别多样性  :performing_arts: :sunrise: :dart:(`统一yolo`)
+8. 图像尺寸分布 :performing_arts: :sunrise:  :dart:(`统一yolo`) 
+9. 类别目标尺寸分布,语义分割类别面积分布 :sunrise: :dart:(`统一yolo`) 
+10. 类别大小多样性 :sunrise: :dart:(`统一yolo`)
 
 ### 数据合理性
-9. 目标尺寸的宽高比是否合理，宽高比失调 ***率***
-10. 图像异常 ***比例***，如图像全黑像素超过阈值  :performing_arts: :sunrise:
-11. 标注的取值范围，如归一化的必须在[0,1]之间 :sunrise:
+11. 目标尺寸的宽高比是否合理，宽高比失调 ***率*** :dart: (`coco` `labelme`  `voc` `yolo`)
+12. 图像异常 ***比例***，如图像全黑像素超过阈值  :performing_arts: :sunrise: :dart:(`统一yolo`)
+13. 标注的取值范围，如归一化的必须在[0,1]之间 :dart:(`coco` `yolo` `voc` `labelme`)
 
 ### 准确性
-12. 标注类别正确性，是否存在类别不在已知类别中 :performing_arts: :sunrise:
-13. 标注异常 ***比例***，如标注文件内容为空的比例 :sunrise:
+14. 标注类别正确性，是否存在类别不在已知类别中 :performing_arts: :sunrise: :dart:(`yolo` `voc` `labelme` `coco`)
+15. 空标注 ***比例***，如标注文件内容为空的比例 :dart: (`voc` `labelme` `yolo`)
 
 ### 重复性
-14. 标注目标框重复 ***率***，存在重复标注的文件比例 :dart:(voc/coco/label)
+16. 标注目标框重复 ***率***，存在重复标注的文件比例 :dart:(`voc` `coco` `labelme` `yolo`)
+17. 图像信息重复 ***率*** :dart: `coco` 
+18. 父类别重复 ***率*** :dart:  `coco` 
 
 ### 一致性
-15. 图像和标注文件是否匹配，是否存在文件，匹配 ***率***  :sunrise:
-16. 标注文件的格式一致性，如labelme对应.json, voc对应.xml, coco对应.json，yolo对应.txt :dart:(voc/labelme)
+19. 图像和标注文件是否匹配，是否存在文件，匹配 ***率***  :sunrise: :dart:(`coco` `voc` `labelme` `yolo`)
+20. 标注文件的格式一致性，如labelme对应.json, voc对应.xml, coco对应.json，yolo对应.txt :dart:(`voc` `labelme` `yolo`)
 
 ### 波动性
-17. 亮度波动性 :performing_arts: :sunrise:
-18. 对比度波动性 :performing_arts: :sunrise:
+21. 亮度波动性 :performing_arts: :sunrise: :dart:(`统一yolo`)
+22. 对比度波动性 :performing_arts: :sunrise: :dart:(`统一yolo`)
 
 
 
