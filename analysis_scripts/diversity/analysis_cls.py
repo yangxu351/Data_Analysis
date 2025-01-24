@@ -14,7 +14,7 @@ title_fontdict = {'family' : 'Microsoft YaHei', 'size': 16}
 fontdict = {"family": "SimHei", "size": 14}
 
 
-def stat_cls(source_dir, category_imgnum_thresh=20, mapping_file=None):
+def stat_cls(source_dir, dict_stat, category_imgnum_thresh=20, mapping_file=None):
     split_folders = ['train', 'val', 'test']
     if mapping_file is None:
         logging.error('class mapping file is needed!')
@@ -72,10 +72,12 @@ def stat_cls(source_dir, category_imgnum_thresh=20, mapping_file=None):
             json.dump(dict_cat_imghw, f, ensure_ascii=False, indent=3)
         f.close()
 
-        img_num = sum(dict_cat_imgnum.values()) # 图像数量级
-        with open(os.path.join(source_dir, f'{sf}_all_img_num.txt'), 'w') as f: 
-            f.write(f'{img_num}%\n')
-        f.close() 
+        img_num = sum(dict_cat_imgnum.values())
+        dict_stat['图像总数量'] = f'{img_num}'   # 图像总数量
+        dabiao = 0
+        for k, num in dict_cat_imgnum.items():
+            dabiao += 1 if num > category_imgnum_thresh else 0
+        dict_stat['类别样本数量达标率'] = f'{round(dabiao/len(dict_cat_imgnum.keys()),4)*100}%'    # 类别样本数量达标率
 
         dict_rel_lbl_diver = {k:1.*v/img_num for k,v in dict_cat_imgnum.items()}
         with open(os.path.join(source_dir, f'{sf}_relative_cat_diversity.json'), 'w') as f: # 相对类别多样性
