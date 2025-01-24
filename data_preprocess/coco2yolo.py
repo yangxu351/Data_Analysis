@@ -113,6 +113,7 @@ def convert_coco_to_yolo(base_dir, dict_stat, src_split='val2017', split='val', 
     duplicate_imgid_annid_bbox = []
     dict_imgid_bbox = {}
     dict_invalid_bbox = {}
+    dict_invalid_wh = {}
     dict_annid_with_unmatch_img = {}
     attribute_lost_annindex_list =[]
     for ax, ann in enumerate(anns_list):
@@ -120,6 +121,7 @@ def convert_coco_to_yolo(base_dir, dict_stat, src_split='val2017', split='val', 
             ann_id = ann['id']
             img_id = ann['image_id']
             cat_id = ann['category_id']
+            bbox = ann['bbox']
         except Exception as e:
             logger.error(f'key attribute of annotation is not found! {str(e)}', exec_info=True) 
             attribute_lost_annindex_list.append(ax)
@@ -133,14 +135,10 @@ def convert_coco_to_yolo(base_dir, dict_stat, src_split='val2017', split='val', 
             img_name = dict_img_id_name[img_id]
             
         # check bbox
-        if 'bbox' not in ann.keys():
-            dict_invalid_bbox[ann_id] = None
+        if len(bbox) !=4:
+            dict_invalid_bbox[ann_id] = bbox
+            logger.error(f'uncomplete bbox of coco {ann_id}')
             continue
-        else:
-            bbox = ann['bbox'] # tl_x tl_y w h
-            if len(bbox) !=4:
-                dict_invalid_bbox[ann_id] = bbox
-                continue
 
         if img_id not in dict_imgid_bbox.keys():
             dict_imgid_bbox[img_id] = [bbox]
@@ -148,15 +146,18 @@ def convert_coco_to_yolo(base_dir, dict_stat, src_split='val2017', split='val', 
             if bbox in dict_imgid_bbox[img_id]:
                 dict_imgid_bbox[img_id].append(bbox)
                 duplicate_imgid_annid_bbox.append((img_id, ann_id, bbox))
+                logger.warning(f'duplicate bbox of coco {ann_id}')
 
         img_width, img_height = dict_img_wh.get(img_id)
 
         # check bbox
         if any([x<0 for x in bbox]) or bbox[0]+bbox[2] > img_width or bbox[1]+bbox[3] > img_height:
             dict_invalid_bbox[ann_id] = bbox
+            logger.error(f'invalid bbox of coco {ann_id}')
             continue
         elif max(bbox[2]/bbox[3],bbox[3]/bbox[2]) > wh_thres:
-            dict_invalid_bbox[ann_id] = bbox
+            dict_invalid_wh[ann_id] = bbox
+            logger.error(f'invalid wh ratio bbox of coco {ann_id}')
             continue
 
         cx = (bbox[0] + bbox[2]/2. - 1)/img_width
@@ -174,6 +175,11 @@ def convert_coco_to_yolo(base_dir, dict_stat, src_split='val2017', split='val', 
         f.close()
     dict_stat['标注不合理比例'] = f'{round(len(dict_invalid_bbox.keys())/len(anns_list),4)*100}%' 
 
+    with open(os.path.join(base_dir, f'{split}_ori_invalid_wh_ratio.json'), 'w') as f: # 目标边界框宽高比失调率
+        json.dump(dict_invalid_wh, f, ensure_ascii=False, indent=3)
+        f.close()
+    dict_stat['目标边界框宽高比失调率'] = f'{round(len(dict_invalid_wh.keys())/len(anns_list),4)*100}%' 
+
     attribute_lost_ann_file = os.path.join(base_dir, split, 'ann_attribute_lost_annindex.txt') # 标注关键字段缺失
     with open(attribute_lost_ann_file, 'w') as f:
         for ax in attribute_lost_annindex_list:
@@ -189,7 +195,7 @@ def convert_coco_to_yolo(base_dir, dict_stat, src_split='val2017', split='val', 
     dict_stat['图像缺失率'] = f'{round(len(dict_annid_with_unmatch_img.keys())/len(anns_list),4)*100}%'
 
     if len(dict_img_id_name.keys()) > len(dict_imgid_bbox.keys()):
-        dict_stat['图像标注匹配率'] = f'{round(len(dict_imgid_bbox.keys())/len(dict_img_id_name.keys()),4)*100}%'
+        dict_stat['图像标注不匹配率'] = f'{round(1-(len(dict_imgid_bbox.keys())/len(dict_img_id_name.keys())),4)*100}%'
        
 
     dumplicate_anno_file = os.path.join(base_dir, f'{split}_ori_duplicate_imgid_annid_bbox.txt')
