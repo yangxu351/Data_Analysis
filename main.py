@@ -55,7 +55,7 @@ if __name__ == '__main__':
     
     if args.task == 'cls':
         cls_correct.outlier_unreadable_img_detection(args.base_dir, outlier_thresh=0.5)
-        stat_cls(args.base_dir,label_imgnum_thresh=args.num_thres)
+        stat_cls(args.base_dir,category_imgnum_thresh=args.num_thres)
         ana_cls(args.base_dir)
     elif args.task == 'odt':
         if args.odt_lbl_format == 'coco':
@@ -69,7 +69,7 @@ if __name__ == '__main__':
         odt_correct.check_id(args.base_dir, num_cls=args.num_cats, split=args.dst_split)
         odt_correct.empty_check_lbl(args.base_dir, split=args.dst_split)
         odt_correct.check_coordinates(args.base_dir, wh_ratio_thres=args.wh_ratio_thres, split=args.dst_split)
-        stat_odt(args.base_dir, label_imgnum_thresh=args.num_thres, img_suffix=args.img_suffix, dst_lbl_suffix=args.lbl_suffix, split=args.dst_split)
+        stat_odt(args.base_dir, category_imgnum_thresh=args.num_thres, img_suffix=args.img_suffix, dst_lbl_suffix=args.lbl_suffix, split=args.dst_split)
         ana_odt(args.base_dir, split=args.dst_split)
     elif args.task == 'seg':
         if args.seg_lbl_format == 'coco':
@@ -79,7 +79,7 @@ if __name__ == '__main__':
         seg_correct.empty_unreadable_check_msk_png(args.base_dir, split=args.dst_split)
         seg_integrity.does_match_img_lbl(args.base_dir, split=args.dst_split)
         seg_correct.check_msk_id(args.base_dir, num_cls=args.num_cats, split=args.dst_split)
-        stat_msk(args.base_dir, img_suffix=args.img_suffix, msk_suffix=args.msk_suffix, label_imgnum_thresh=args.num_thres, split=args.dst_split)
+        stat_msk(args.base_dir, img_suffix=args.img_suffix, msk_suffix=args.msk_suffix, category_imgnum_thresh=args.num_thres, split=args.dst_split)
         ana_msk(args.base_dir, split=args.dst_split)
     else:
         print('please input task!!!')
