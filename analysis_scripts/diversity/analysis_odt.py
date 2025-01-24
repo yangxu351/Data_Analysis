@@ -5,6 +5,10 @@ import pandas as pd
 import json 
 import matplotlib.pyplot as plt
 from analysis_scripts.correctness.odt_correct import empty_lbl_check_by_file
+from analysis_scripts.diversity.img_ana import caculate_brightness, calculate_image_contrast
+import logging
+logger = logging.getLogger(__name__)
+
 plt.get_cmap('Set3')
 title_fontdict = {'family' : 'Microsoft YaHei', 'size': 16}
 fontdict={"family": "SimHei", "size": 14}
@@ -19,7 +23,7 @@ def get_bbx_wh(lbl, w, h):
     # return arr_lbl[:,0].astype(np.int16), np.round(arr_lbl[:, 3:5], decimals=2)
     return np.array(list(zip(lbl.iloc[:, 0], np.round(arr_lbl[:, 3], decimals=2), np.round(arr_lbl[:, 4], decimals=2))))
 
-def stat_odt(source_dir, label_imgnum_thresh=20, split=None):
+def stat_odt(source_dir, dict_stat, category_imgnum_thresh=20, split=None):
     split_folders = os.listdir(source_dir)
     if split:
         valid_folders = [split]
@@ -42,17 +46,36 @@ def stat_odt(source_dir, label_imgnum_thresh=20, split=None):
             im_hw_list = []
             dict_cat_bbxhw = {}
             dict_cat_imgname = {}
+            img_list = []
+            brightness_avg_list = []
+            contrast_list = []
             for ix, name in enumerate(file_names):
                 im_name = name + dict_img_suffix[name]
-                img = np.array(Image.open(os.path.join(src_img_dir, im_name)))
+                try:
+                    pil_img = Image.open(os.path.join(src_img_dir, im_name))
+                except:
+                    logger.error(f'image {name} is unreadable!')
+                    continue
+                try:
+                    brightness = caculate_brightness(pil_img)
+                except Exception as e:
+                    logger.error(f"Unsupported image mode: {str(e)}", exc_info=True)
+                    continue
+                brightness_avg_list.append(brightness)
+                constrast = calculate_image_contrast(pil_img)
+                contrast_list.append(constrast)
+
+                img = np.array(pil_img)
+                img_list.append(name)
                 # print('ori shape',  img.shape) # h,w,c
                 h, w, _ = img.shape
                 im_hw_list.append((h,w))
                 # print('image name', im_name)
                 lbl_file = os.path.join(src_lbl_dir, f"{name}.{dict_lbl_suffix[name]}")
                 if not os.path.exists(lbl_file) or empty_lbl_check_by_file(lbl_file):
+                    logger.warning(f'{os.path.basename(lbl_file)}  is empty or not exist')
                     continue
-                lbl = pd.read_csv(lbl_file, header=None, delimiter=',')
+                lbl = pd.read_csv(lbl_file, header=None, delimiter=' ')
                 arr_cat_bbxwh = get_bbx_wh(lbl, w, h)
                 for cx in range(arr_cat_bbxwh.shape[0]):
                     cat_id = int(arr_cat_bbxwh[cx, 0])
@@ -69,13 +92,24 @@ def stat_odt(source_dir, label_imgnum_thresh=20, split=None):
                 arr_img_hw[lx, 1] = w
             np.savetxt(os.path.join(source_dir, f'{sf}_img_hw.csv'), arr_img_hw, delimiter=',', fmt='%.2f') # 图像尺寸多样性
 
+            # error_ext_file = os.path.join(base_dir, 'all_jsons_error_extention.txt')
+            # with open(error_ext_file, 'w') as f:
+            #     for name in suffix_error_files:
+            #         f.write("%s\n" % name)
+            # f.close()
+            
+            brightness_std = np.std(brightness_avg_list)
+            contrast_std = np.std(contrast_list)
+            dict_brightness = {'brightness_list': brightness_avg_list, 'brightness_std': brightness_std} 
+            with open(os.path.join(source_dir, f'{sf}_allimg_volatility_brightness.json'), 'w') as f: # 亮度波动性
+                json.dump(dict_brightness, f, indent=3)
+
+            dict_contrast = {'constrast_list': contrast_list, 'contrast_std':contrast_std} 
+            with open(os.path.join(source_dir, f'{sf}_allimg_volatility_contrast.json'), 'w') as f: # 对比度波动性
+                json.dump(dict_contrast, f, indent=3)
+
             with open(os.path.join(source_dir, f'{sf}_cat_bbxhw.json'), 'w') as f: # 类别尺寸多样性
                 json.dump(dict_cat_bbxhw, f, ensure_ascii=False, indent=3)
-            f.close()
-
-            dict_cat_imgnum = {k:len(v) for k,v in dict_cat_imgname.items()}
-            with open(os.path.join(source_dir, f'{sf}_cat_imgnum.json'), 'w') as f: # 类别多样性
-                json.dump(dict_cat_imgnum, f, ensure_ascii=False, indent=3)
             f.close()
 
             dict_rel_lbl_diver = {k:1.*len(v)/img_num for k,v in dict_cat_imgname.items()}
@@ -83,11 +117,24 @@ def stat_odt(source_dir, label_imgnum_thresh=20, split=None):
                 json.dump(dict_rel_lbl_diver, f, ensure_ascii=False, indent=3)
             f.close() 
 
-            dict_lbl_size_diver = {k: 1 if len(v)<label_imgnum_thresh else 0 for k,v in dict_cat_imgname.items()}
+            dict_cat_imgnum = {k:len(v) for k,v in dict_cat_imgname.items()}
+            with open(os.path.join(source_dir, f'{sf}_cat_imgnum.json'), 'w') as f: # 类别多样性
+                json.dump(dict_cat_imgnum, f, ensure_ascii=False, indent=3)
+            f.close()
+
+            dict_stat['图像总数量'] = f'{len(img_list)}'   # 图像总数量
+            dabiao = 0
+            for k, num in dict_cat_imgnum.items():
+                dabiao += 1 if num > category_imgnum_thresh else 0
+            dict_stat['类别样本数量达标率'] = f'{round(dabiao/len(dict_cat_imgnum.keys()),4)*100}%'    # 类别样本数量达标率
+
+            dict_lbl_size_diver = {k: 1 if len(v)<category_imgnum_thresh else 0 for k,v in dict_cat_imgname.items()}
             lbl_size_diver = 1.*sum(dict_lbl_size_diver.values())/len(dict_lbl_size_diver.keys())
-            with open(os.path.join(source_dir, f'{sf}_cat_size_diversity.txt'), 'w') as f: # 类别大小多样性
+            with open(os.path.join(source_dir, f'{sf}_cat_size_diversity.txt'), 'w') as f: 
                 f.write(f'{lbl_size_diver*100}%\n')
             f.close() 
+            dict_stat['类别大小多样性'] = f'{round(lbl_size_diver,4)*100}%'    # 类别大小多样性
+            
 
 def ana_odt(source_dir, split=None):
     split_folders = os.listdir(source_dir)
