@@ -17,8 +17,36 @@ def make_folder_if_not(dst_dir, rm_exist=True):
             shutil.rmtree(dst_dir)
             os.mkdir(dst_dir)
 
+def dose_match_img_lbl(base_dir, dict_stat):
+    xml_dir = os.path.join(base_dir, 'Annotations')
+    img_dir = os.path.join(base_dir, 'JPEGImages')
+    
+    img_list = os.listdir(img_dir)
+    img_list.sort()
+    img_name_wo_suffix = [f.split('.')[0] for f in img_list]
+    img_wolbl_list = None 
 
-def covert_voc_to_yolo(base_dir, dict_stat, wh_thres=50, extention='.xml'):
+    lbl_list = os.listdir(xml_dir)
+    lbl_list.sort()
+    lbl_name_wo_suffix = [f.split('.')[0] for f in lbl_list]
+    lbl_woimg_list = None 
+
+    file_names = [x for x in img_name_wo_suffix if x in lbl_name_wo_suffix]
+    if len(lbl_list)>len(file_names):
+        logger.warning('labels more than images!!!')
+        lbl_woimg_list = [name for name in lbl_list if name.split('.')[0] not in img_name_wo_suffix]
+        arr_lbl_woimg = np.array(lbl_woimg_list)
+        np.savetxt(os.path.join(base_dir, 'dismatch_lbl_without_img.csv'), arr_lbl_woimg, fmt='%s')
+        dict_stat['图像标注不匹配率'] = f'{round(len(lbl_woimg_list)/len(lbl_list),4)*100}%'
+    elif len(img_list)>len(file_names):
+        logger.warning('images more than labels!!!')
+        img_wolbl_list = [name for name in img_list if name.split('.')[0] not in lbl_name_wo_suffix]
+        arr_img_wolbl = np.array(img_wolbl_list)
+        np.savetxt(os.path.join(base_dir, 'dismatch_img_without_lbl.csv'), arr_img_wolbl, fmt='%s')
+        dict_stat['图像标注不匹配率'] = f'{round(len(img_wolbl_list)/len(img_list),4)*100}%'
+
+
+def covert_voc_to_yolo(base_dir, dict_stat, mapping_file, wh_thres=50, extention='.xml'):
     ''' 
         convert VOC to YOLO 
         empty labels
@@ -31,20 +59,34 @@ def covert_voc_to_yolo(base_dir, dict_stat, wh_thres=50, extention='.xml'):
     # xml_files = glob.glob(os.path.join(xml_dir, '*.xml'))
     xml_files = os.listdir(xml_dir)
     
-    dict_cats = {}
+    dict_id_cat = json.load(open(mapping_file))
+    classes = [x for x in dict_id_cat.values()]
+    ids = [int(x) for x in dict_id_cat.keys()]
+    dict_cat_id = {classes[ix]:ids[ix] for ix in range(len(classes))}
+
     index = 0
     dict_duplicate_file_box = {}
     empty_lbls = []
     dict_invalid_bbx_xmls = {}
+    invalid_cat_files = []
+    error_wh_ratio_xmls = []
     attribute_lost_xmls = []
     suffix_error_files = []
+    damaged_xmls = []
     for file_name in xml_files:
         if not file_name.endswith(extention):
             suffix_error_files.append(file_name)
+            logger.error(f'{file_name} extention error!')
             continue
         xf = os.path.join(xml_dir, file_name)
-        ann_tree = ET.parse(xf)
-        ann_root = ann_tree.getroot()
+        try:
+            ann_tree = ET.parse(xf)
+            ann_root = ann_tree.getroot()
+        except:
+            logger.error('xml file is not readable')
+            damaged_xmls.append(file_name)
+            continue 
+
         try:
             size = ann_root.find('size')
             img_width = int(size.findtext('width'))
@@ -62,9 +104,10 @@ def covert_voc_to_yolo(base_dir, dict_stat, wh_thres=50, extention='.xml'):
             empty_lbls.append(file_name)
         for obj in objects:
             cat = obj.findtext('name')
-            if cat not in dict_cats.keys():
-                dict_cats[cat] = index
-                index += 1
+            if cat not in classes:
+                invalid_cat_files.append(file_name)
+                logger.error(f'{file_name} contains invalid catid!')
+
             bndbox = obj.find('bndbox')
             # check invlid coordinates
             if bndbox is None: # FIXME:  box None 
@@ -89,17 +132,23 @@ def covert_voc_to_yolo(base_dir, dict_stat, wh_thres=50, extention='.xml'):
                     dict_invalid_bbx_xmls[file_name]= [[cat,xmin, ymin, xmax, ymax]]
                 else:
                     dict_invalid_bbx_xmls[file_name].append([cat,xmin, ymin, xmax, ymax])
+                logger.error(f'{file_name} contains invalid coordinates!')
                 continue
             
             box = [xmin, ymin, xmax, ymax]
             width = xmax - xmin 
             height = ymax - ymin
             # check invlid coordinates
-            if xmin < 0 or ymin < 0 or xmax >img_width or ymax >img_height or width<=0 or height<=0 or (max(width/height, height/width) > wh_thres):
+            if xmin < 0 or ymin < 0 or xmax >img_width or ymax >img_height or width<=0 or height<=0:
                 if file_name not in dict_invalid_bbx_xmls.keys():
                     dict_invalid_bbx_xmls[file_name]= [[cat,xmin, ymin, xmax, ymax]]
                 else:
                     dict_invalid_bbx_xmls[file_name].append([cat,xmin, ymin, xmax, ymax])
+                logger.error(f'{file_name} contains invalid coordinates!')
+                continue
+            elif max(width/height, height/width) > wh_thres:
+                error_wh_ratio_xmls.append(file_name)
+                logger.error(f'{file_name} contains invalid wh ratio!')
                 continue
            
             # check duplicate
@@ -113,7 +162,7 @@ def covert_voc_to_yolo(base_dir, dict_stat, wh_thres=50, extention='.xml'):
 
             center_wid = xmin+width/2.
             center_hei = ymin+height/2.
-            lbl_list.append([dict_cats[cat], center_wid/img_width, center_hei/img_height, width/img_width, height/img_height])
+            lbl_list.append([dict_cat_id[cat], center_wid/img_width, center_hei/img_height, width/img_width, height/img_height])
         
         # print('index', index)
         
@@ -123,18 +172,40 @@ def covert_voc_to_yolo(base_dir, dict_stat, wh_thres=50, extention='.xml'):
                 f.write("%d %.4f %.4f %.4f %.4f\n" % (cat_id, cx, cy, w, h))
         f.close() 
 
-    file_invalid_xml = os.path.join(base_dir, 'all_files_invalid_coords.json')
+
+    file_damaged_xml = os.path.join(base_dir, 'all_xmls_damaged.json')
+    with open(file_damaged_xml, 'w') as f:
+        for name in damaged_xmls:
+            f.write("%s\n" % name)
+    f.close() 
+    dict_stat['标注文件损坏率'] = f'{round(len(damaged_xmls)/len(xml_files),4)*100}%'
+
+    file_invalid_xml = os.path.join(base_dir, 'all_xmls_invalid_coords.json')
     with open(file_invalid_xml, 'w') as f:
         json.dump(dict_invalid_bbx_xmls, f, ensure_ascii=False, indent=3)
     f.close()   
     dict_stat['标注不合理比例'] = f'{round(len(dict_invalid_bbx_xmls.keys())/len(xml_files),4)*100}%'
+    
+    file_err_wh_xml = os.path.join(base_dir, 'all_xmls_error_whratio.json')
+    with open(file_err_wh_xml, 'w') as f:
+        for name in error_wh_ratio_xmls:
+            f.write("%s\n" % name)
+    f.close()   
+    dict_stat['目标边界框宽高比失调率'] = f'{round(len(error_wh_ratio_xmls)/len(xml_files),4)*100}%'
 
-    file_empty = os.path.join(base_dir, 'all_files_empty_lbls.txt')
+    file_empty = os.path.join(base_dir, 'all_xmls_empty_lbls.txt')
     with open(file_empty, 'w') as f:
         for name in empty_lbls:
             f.write("%s\n" % name)
     f.close() 
     dict_stat['空标注比例'] = f'{round(len(empty_lbls)/len(xml_files),4)*100}%'
+
+    file_err_cat = os.path.join(base_dir, 'all_xmls_error_cat.txt')
+    with open(file_err_cat, 'w') as f:
+        for name in invalid_cat_files:
+            f.write("%s\n" % name)
+    f.close() 
+    dict_stat['标注类别错误率'] = f'{round(len(invalid_cat_files)/len(xml_files),4)*100}%'
  
     with open(os.path.join(base_dir, 'all_xmls_lost_key_attributes.txt'), 'w') as f: 
         for name in attribute_lost_xmls:
@@ -151,7 +222,7 @@ def covert_voc_to_yolo(base_dir, dict_stat, wh_thres=50, extention='.xml'):
     with open(os.path.join(base_dir, 'all_xmls_duplicate_bbox.json'), 'w') as f: # dict of file_name:[bbox]
         json.dump(dict_duplicate_file_box, f, ensure_ascii=False, indent=3)
     f.close() 
-    dict_stat['标注重复比例'] = f'{round(len(suffix_error_files)/len(xml_files),4)*100}%'
+    dict_stat['标注重复率'] = f'{round(len(dict_duplicate_file_box.keys())/len(xml_files),4)*100}%'
 
 def movefiles_by_setfile(base_dir, split='train'):
     '''
