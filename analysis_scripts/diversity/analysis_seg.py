@@ -12,7 +12,7 @@ title_fontdict = {'family' : 'Microsoft YaHei', 'size': 16}
 fontdict={"family": "SimHei", "size": 14}
 
 
-def stat_msk(source_dir, category_imgnum_thresh=20, split=None):
+def stat_msk(source_dir, dict_stat, category_imgnum_thresh=20, split=None):
     if split:
         valid_folders = [split]
     else:
@@ -86,6 +86,12 @@ def stat_msk(source_dir, category_imgnum_thresh=20, split=None):
             json.dump(dict_cat_imgnum, f, ensure_ascii=False, indent=3)
         f.close()  
 
+        dict_stat['图像总数量'] = f'{len(im_hw_list)}'   # 图像总数量
+        dabiao = 0
+        for k, num in dict_cat_imgnum.items():
+            dabiao += 1 if num > category_imgnum_thresh else 0
+        dict_stat['类别样本数量达标率'] = f'{round(dabiao/len(dict_cat_imgnum.keys()),4)*100}%'    # 类别样本数量达标率
+
         with open(os.path.join(source_dir, f'{sf}_cat_area.json'), 'w') as f: # 类别面积多样性
             json.dump(dict_cat_area, f, ensure_ascii=False, indent=3)
         f.close()      
@@ -100,6 +106,7 @@ def stat_msk(source_dir, category_imgnum_thresh=20, split=None):
         with open(os.path.join(source_dir, f'{sf}_cat_size_diversity.txt'), 'w') as f: # 类别大小多样性
             f.write(f'{lbl_size_diver*100}%\n')
         f.close() 
+        dict_stat['类别大小多样性'] = f'{round(lbl_size_diver,4)*100}%'    # 类别大小多样性
 
 
 def ana_msk(source_dir, split=None):
