@@ -101,7 +101,7 @@
 ### 完整性
 1. 图像是否被破坏，是否可读，文件损坏 ***率*** :performing_arts: :sunrise: :dart:(`统一yolo`)
 2. 标注文件字段完整性，是否有标注关键字段缺失等  :dart: (`coco` `voc`  `labelme` `yolo`)
-3. 标注文件是否被破坏，是否可读，文件损坏 ***率*** :performing_arts: :sunrise: :dart:( `voc` `labelme` `yolo`)
+3. 标注文件是否被破坏，是否可读，文件损坏 ***率***  :sunrise: :dart:( `voc` `labelme` `yolo`)
 
 ### 数据集量级
 4. 图像数量级，图像数量是否达到指定阈值，是否能够支撑训练或测试 :performing_arts: :sunrise: :dart:(`统一yolo`)
