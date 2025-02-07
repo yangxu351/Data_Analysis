@@ -71,7 +71,7 @@ if __name__ == '__main__':
         stat_cls(args.base_dir, dict_stat, category_imgnum_thresh=args.num_per_cat_thres, mapping_file=args.class_mapping_file)
         # ana_cls(args.base_dir)
         with open(os.path.join(args.base_dir, 'cls_static_values.json'), 'w') as f: 
-            json.dump(dict_stat, f, ensure_ascii=False, indent=3)
+            json.dump(dict_stat, f, ensure_ascii=False, indent=4)
         f.close() 
     elif args.task == 'odt':
         # 配置日志记录器
@@ -98,7 +98,7 @@ if __name__ == '__main__':
         stat_odt(args.base_dir, category_imgnum_thresh=args.num_per_cat_thres, split=args.dst_split)
         # ana_odt(args.base_dir, split=args.dst_split)
         with open(os.path.join(args.base_dir, 'odt_static_values.json'), 'w') as f: # dict of file_name:[bbox]
-            json.dump(dict_stat, f, ensure_ascii=False, indent=3)
+            json.dump(dict_stat, f, ensure_ascii=False, indent=4)
         f.close() 
     elif args.task == 'seg':
         # 配置日志记录器
@@ -118,7 +118,7 @@ if __name__ == '__main__':
         stat_msk(args.base_dir, dict_stat, category_imgnum_thresh=args.num_per_cat_thres, split=args.dst_split)
         # ana_msk(args.base_dir, split=args.dst_split)
         with open(os.path.join(args.base_dir, 'seg_static_values.json'), 'w') as f: 
-            json.dump(dict_stat, f, ensure_ascii=False, indent=3)
+            json.dump(dict_stat, f, ensure_ascii=False, indent=4)
         f.close() 
     else:
         # 配置日志记录器
