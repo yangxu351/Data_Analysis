@@ -59,7 +59,7 @@ def convert_coco_to_png(base_dir, src_split='val2017', split='val'):
     f.close()
 
     with open(os.path.join(base_dir, 'dict_img_id_name.json'), 'w') as f: # dict of img_id:img_name
-        json.dump(dict_img_id_name, f, ensure_ascii=False, indent=3)
+        json.dump(dict_img_id_name, f, ensure_ascii=False, indent=4)
     f.close() 
 
     categories = js['categories']
@@ -89,11 +89,11 @@ def convert_coco_to_png(base_dir, src_split='val2017', split='val'):
     f.close()
 
     with open(os.path.join(base_dir, f'{split}_dict_cat_super_children.json'), 'w') as f: # dict of supercategory:[cat1,cat2,...]
-        json.dump(dict_cats_super_children, f, ensure_ascii=False, indent=3)
+        json.dump(dict_cats_super_children, f, ensure_ascii=False, indent=4)
     f.close() 
 
     with open(os.path.join(base_dir, f'{split}_dict_cat_id_name.json'), 'w') as f: # dict of cat_id:cat_name
-        json.dump(dict_cat_id_name, f, ensure_ascii=False, indent=3)
+        json.dump(dict_cat_id_name, f, ensure_ascii=False, indent=4)
     f.close() 
 
     anns_list = js['annotations']
@@ -180,7 +180,7 @@ def convert_coco_to_png(base_dir, src_split='val2017', split='val'):
         Image.fromarray(mask, mode='P').save(os.path.join(mask_dir, iname))
     
     with open(os.path.join(base_dir, f'{split}_invalid_annid_segs.json'), 'w') as f: # dict of invalid ann_id:segs
-        json.dump(dict_invalide_id_segs, f, ensure_ascii=False, indent=3)
+        json.dump(dict_invalide_id_segs, f, ensure_ascii=False, indent=4)
     f.close() 
 
     dumplicate_ann_id_file = os.path.join(base_dir, f'{split}_duplicate_annid.txt')

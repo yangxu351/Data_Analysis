@@ -114,7 +114,7 @@ def check_msk_id(base_dir, num_cls, split=None):
                 dict_invalid_msk_cid[msk_name] = outlier_values.tolist()
                     
         with open(os.path.join(base_dir, f'{sf}_invalid_msk_id_files.txt'), 'w') as f:
-            json.dump(dict_invalid_msk_cid, f, ensure_ascii=False, indent=3)
+            json.dump(dict_invalid_msk_cid, f, ensure_ascii=False, indent=4)
         f.close()
 
 if __name__ == "__main__":

@@ -58,18 +58,18 @@ def stat_cls(source_dir, dict_stat, category_imgnum_thresh=20, mapping_file=None
 
         dict_brightness = {'brightness_list': brightness_avg_list, 'brightness_std': brightness_std} 
         with open(os.path.join(source_dir, f'{sf}_allimg_volatility_brightness.json'), 'w') as f: # 亮度波动性
-            json.dump(dict_brightness, f, indent=3)
+            json.dump(dict_brightness, f, indent=4)
 
         dict_contrast = {'constrast_list': contrast_list, 'contrast_std':contrast_std} 
         with open(os.path.join(source_dir, f'{sf}_allimg_volatility_contrast.json'), 'w') as f: # 对比度波动性
-            json.dump(dict_contrast, f, indent=3)
+            json.dump(dict_contrast, f, indent=4)
 
         with open(os.path.join(source_dir, f'{sf}_cat_imgnum.json'), 'w') as f: #  类别样本数量分布
-            json.dump(dict_cat_imgnum, f, ensure_ascii=False, indent=3)
+            json.dump(dict_cat_imgnum, f, ensure_ascii=False, indent=4)
         f.close()
 
         with open(os.path.join(source_dir, f'{sf}_cat_imghw.json'), 'w') as f: # 图像尺寸分布
-            json.dump(dict_cat_imghw, f, ensure_ascii=False, indent=3)
+            json.dump(dict_cat_imghw, f, ensure_ascii=False, indent=4)
         f.close()
 
         img_num = sum(dict_cat_imgnum.values())
@@ -81,7 +81,7 @@ def stat_cls(source_dir, dict_stat, category_imgnum_thresh=20, mapping_file=None
 
         dict_rel_lbl_diver = {k:1.*v/img_num for k,v in dict_cat_imgnum.items()}
         with open(os.path.join(source_dir, f'{sf}_relative_cat_diversity.json'), 'w') as f: # 相对类别多样性
-            json.dump(dict_rel_lbl_diver, f, ensure_ascii=False, indent=3)
+            json.dump(dict_rel_lbl_diver, f, ensure_ascii=False, indent=4)
         f.close() 
 
         dict_lbl_size_diver = {k: 1 if v<category_imgnum_thresh else 0 for k,v in dict_cat_imgnum.items()}

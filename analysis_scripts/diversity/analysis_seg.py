@@ -69,11 +69,11 @@ def stat_msk(source_dir, dict_stat, category_imgnum_thresh=20, split=None):
 
         dict_brightness = {'brightness_list': brightness_avg_list, 'brightness_std': brightness_std} 
         with open(os.path.join(source_dir, f'{sf}_allimg_volatility_brightness.json'), 'w') as f: # 亮度波动性
-            json.dump(dict_brightness, f, indent=3)
+            json.dump(dict_brightness, f, indent=4)
 
         dict_contrast = {'constrast_list': contrast_list, 'contrast_std':contrast_std} 
         with open(os.path.join(source_dir, f'{sf}_allimg_volatility_contrast.json'), 'w') as f: # 对比度波动性
-            json.dump(dict_contrast, f, indent=3)
+            json.dump(dict_contrast, f, indent=4)
                     
         arr_img_hw = np.ones((len(im_hw_list), 2), dtype=np.int32)
         for lx, (h, w) in enumerate(im_hw_list):
@@ -83,7 +83,7 @@ def stat_msk(source_dir, dict_stat, category_imgnum_thresh=20, split=None):
 
         dict_cat_imgnum = {k:len(v) for k,v in dict_cat_imgname.items()} 
         with open(os.path.join(source_dir, f'{sf}_cat_imgnum.json'), 'w') as f: # 类别多样性
-            json.dump(dict_cat_imgnum, f, ensure_ascii=False, indent=3)
+            json.dump(dict_cat_imgnum, f, ensure_ascii=False, indent=4)
         f.close()  
 
         dict_stat['图像总数量'] = f'{len(im_hw_list)}'   # 图像总数量
@@ -93,12 +93,12 @@ def stat_msk(source_dir, dict_stat, category_imgnum_thresh=20, split=None):
         dict_stat['类别样本数量达标率'] = f'{round(dabiao/len(dict_cat_imgnum.keys()),4)*100}%'    # 类别样本数量达标率
 
         with open(os.path.join(source_dir, f'{sf}_cat_area.json'), 'w') as f: # 类别面积多样性
-            json.dump(dict_cat_area, f, ensure_ascii=False, indent=3)
+            json.dump(dict_cat_area, f, ensure_ascii=False, indent=4)
         f.close()      
 
         dict_rel_lbl_diver = {k:1.*len(v)/img_num for k,v in dict_cat_imgname.items()}
         with open(os.path.join(source_dir, f'{sf}_relative_cat_diversity.json'), 'w') as f: # 相对类别多样性
-            json.dump(dict_rel_lbl_diver, f, ensure_ascii=False, indent=3)
+            json.dump(dict_rel_lbl_diver, f, ensure_ascii=False, indent=4)
         f.close() 
 
         dict_lbl_size_diver = {k: 1 if len(v)<category_imgnum_thresh else 0 for k,v in dict_cat_imgname.items()}

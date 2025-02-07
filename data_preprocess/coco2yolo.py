@@ -68,7 +68,7 @@ def convert_coco_to_yolo(base_dir, dict_stat, src_split='val2017', split='val', 
     dict_stat['图像信息重复率'] = f'{round(len(duplicate_imginfo_list)/len(img_list),4)*100}%'
 
     with open(os.path.join(base_dir, f'{split}_dict_img_id_name.json'), 'w') as f: # dict of img_id:img_name
-        json.dump(dict_img_id_name, f, ensure_ascii=False, indent=3)
+        json.dump(dict_img_id_name, f, ensure_ascii=False, indent=4)
     f.close() 
 
     # categories = js['categories']
@@ -100,11 +100,11 @@ def convert_coco_to_yolo(base_dir, dict_stat, src_split='val2017', split='val', 
     dict_stat['父类重复率'] = f'{round(len(duplicate_catinfo_list)/len(dict_cats_super_children.keys()),4)*100}%' if len(dict_cats_super_children.keys()) else '0%'
 
     with open(os.path.join(base_dir, f'{split}_dict_cat_super_children.json'), 'w') as f: # dict of supercategory:[cat1,cat2,...]
-        json.dump(dict_cats_super_children, f, ensure_ascii=False, indent=3)
+        json.dump(dict_cats_super_children, f, ensure_ascii=False, indent=4)
     f.close() 
 
     with open(os.path.join(base_dir, f'{split}_dict_cat_id_name.json'), 'w') as f: # dict of cat_id:cat_name
-        json.dump(dict_cat_id_name, f, ensure_ascii=False, indent=3)
+        json.dump(dict_cat_id_name, f, ensure_ascii=False, indent=4)
     f.close() 
 
     
@@ -171,12 +171,12 @@ def convert_coco_to_yolo(base_dir, dict_stat, src_split='val2017', split='val', 
             dict_imgname_anns[img_name].append(cid_cxy_wh)
 
     with open(os.path.join(base_dir, f'{split}_ori_invalid_annid_bbox.json'), 'w') as f: # 标注不合理
-        json.dump(dict_invalid_bbox, f, ensure_ascii=False, indent=3)
+        json.dump(dict_invalid_bbox, f, ensure_ascii=False, indent=4)
         f.close()
     dict_stat['标注不合理比例'] = f'{round(len(dict_invalid_bbox.keys())/len(anns_list),4)*100}%' 
 
     with open(os.path.join(base_dir, f'{split}_ori_invalid_wh_ratio.json'), 'w') as f: # 目标边界框宽高比失调率
-        json.dump(dict_invalid_wh, f, ensure_ascii=False, indent=3)
+        json.dump(dict_invalid_wh, f, ensure_ascii=False, indent=4)
         f.close()
     dict_stat['目标边界框宽高比失调率'] = f'{round(len(dict_invalid_wh.keys())/len(anns_list),4)*100}%' 
 
@@ -190,7 +190,7 @@ def convert_coco_to_yolo(base_dir, dict_stat, src_split='val2017', split='val', 
     
     ann_img_dismatch_file = os.path.join(base_dir, split, 'ann_id_with_unmatched_imgs.json') # 图像标注不匹配
     with open(ann_img_dismatch_file, 'w') as f:
-        json.dump(dict_annid_with_unmatch_img, f, ensure_ascii=False, indent=3)
+        json.dump(dict_annid_with_unmatch_img, f, ensure_ascii=False, indent=4)
     f.close()
     dict_stat['图像缺失率'] = f'{round(len(dict_annid_with_unmatch_img.keys())/len(anns_list),4)*100}%'
 

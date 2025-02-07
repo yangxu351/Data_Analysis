@@ -182,7 +182,7 @@ def covert_voc_to_yolo(base_dir, dict_stat, mapping_file, wh_thres=50, extention
 
     file_invalid_xml = os.path.join(base_dir, 'all_xmls_invalid_coords.json')
     with open(file_invalid_xml, 'w') as f:
-        json.dump(dict_invalid_bbx_xmls, f, ensure_ascii=False, indent=3)
+        json.dump(dict_invalid_bbx_xmls, f, ensure_ascii=False, indent=4)
     f.close()   
     dict_stat['标注不合理比例'] = f'{round(len(dict_invalid_bbx_xmls.keys())/len(xml_files),4)*100}%'
     
@@ -220,7 +220,7 @@ def covert_voc_to_yolo(base_dir, dict_stat, mapping_file, wh_thres=50, extention
     dict_stat['标注文件格式不一致比例'] = f'{round(len(suffix_error_files)/len(xml_files),4)*100}%'
 
     with open(os.path.join(base_dir, 'all_xmls_duplicate_bbox.json'), 'w') as f: # dict of file_name:[bbox]
-        json.dump(dict_duplicate_file_box, f, ensure_ascii=False, indent=3)
+        json.dump(dict_duplicate_file_box, f, ensure_ascii=False, indent=4)
     f.close() 
     dict_stat['标注重复率'] = f'{round(len(dict_duplicate_file_box.keys())/len(xml_files),4)*100}%'
 

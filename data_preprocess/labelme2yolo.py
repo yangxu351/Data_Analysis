@@ -190,7 +190,7 @@ def covert_labelme_to_yolo(base_dir, dict_stat, wh_thres=50, mapping_file='', ex
 
     file_invalid_xml = os.path.join(base_dir, 'all_jsons_invalid_coords.json')
     with open(file_invalid_xml, 'w') as f:
-        json.dump(dict_invalid_bbx_jsons, f, ensure_ascii=False, indent=3)
+        json.dump(dict_invalid_bbx_jsons, f, ensure_ascii=False, indent=4)
     f.close()   
     dict_stat['标注不合理比例'] = f'{round(len(dict_invalid_bbx_jsons.keys())/len(json_files),4)*100}%' # 标注不合理比例
     
@@ -209,7 +209,7 @@ def covert_labelme_to_yolo(base_dir, dict_stat, wh_thres=50, mapping_file='', ex
     dict_stat['空标注比例'] = f'{round(len(empty_lbls)/len(json_files),4)*100}%'  # 空标注比例
 
     with open(os.path.join(base_dir, 'all_jsons_duplicate_bbox.json'), 'w') as f: # dict of file_name:[bbox]
-        json.dump(dict_duplicate_file_box, f, ensure_ascii=False, indent=3)
+        json.dump(dict_duplicate_file_box, f, ensure_ascii=False, indent=4)
     f.close() 
     dict_stat['标注重复率'] = f'{round(len(dict_duplicate_file_box.keys())/len(json_files),4)*100}%'  # 标注重复率
 
